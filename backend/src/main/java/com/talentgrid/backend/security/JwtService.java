@@ -3,6 +3,7 @@ package com.talentgrid.backend.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.io.DecodingException;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -26,10 +27,12 @@ public class JwtService {
             @Value("${app.jwt.issuer}") String issuer,
             @Value("${app.jwt.audience}") String audience
     ) {
+        // jjwt throws DecodingException (a JwtException, not an IllegalArgumentException)
+        // on a non-base64 secret, so both have to be caught for the raw-bytes fallback.
         byte[] keyBytes;
         try {
             keyBytes = Decoders.BASE64.decode(secret);
-        } catch (IllegalArgumentException e) {
+        } catch (DecodingException | IllegalArgumentException e) {
             keyBytes = secret.getBytes(StandardCharsets.UTF_8);
         }
         this.key = Keys.hmacShaKeyFor(keyBytes);
