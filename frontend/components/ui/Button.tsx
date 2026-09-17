@@ -17,9 +17,9 @@ const V: Record<Variant, string> = {
   ghost:     "bg-transparent text-muted hover:text-charcoal border border-transparent",
 };
 const S: Record<Size, string> = {
-  sm: "px-4 py-2 text-[11px] tracking-[0.14em]",
-  md: "px-6 py-2.5 text-[11px] tracking-[0.16em]",
-  lg: "px-8 py-3 text-[11px] tracking-[0.18em]",
+  sm: "px-4 py-2 text-[13px] tracking-[0.14em]",
+  md: "px-6 py-2.5 text-[13px] tracking-[0.16em]",
+  lg: "px-8 py-3 text-[13px] tracking-[0.18em]",
 };
 
 function c(v: Variant, s: Size, extra?: string) {

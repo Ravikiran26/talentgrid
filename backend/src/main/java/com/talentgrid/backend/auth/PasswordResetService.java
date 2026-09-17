@@ -4,10 +4,12 @@ import com.talentgrid.backend.auth.dto.ForgotPasswordRequest;
 import com.talentgrid.backend.auth.dto.MessageResponse;
 import com.talentgrid.backend.auth.dto.ResetPasswordRequest;
 import com.talentgrid.backend.exception.BadRequestException;
+import com.talentgrid.backend.notification.EmailService;
 import com.talentgrid.backend.user.User;
 import com.talentgrid.backend.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +31,10 @@ public class PasswordResetService {
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
+
+    @Value("${app.frontend-url}")
+    private String frontendUrl;
 
     @Transactional
     public MessageResponse forgotPassword(ForgotPasswordRequest req) {
@@ -47,8 +53,13 @@ public class PasswordResetService {
                     .used(false)
                     .build();
             tokenRepository.save(entity);
-            log.info("Password reset token issued for userId={} email={}: {}",
-                    user.getId(), req.email(), token);
+            log.info("Password reset token issued for userId={}", user.getId());
+            String link = frontendUrl + "/reset-password?token=" + token;
+            emailService.send(user.getEmail(), "Reset your TalentGrid password",
+                    "Hello " + user.getFullName() + ",\n\n"
+                            + "We received a request to reset your password. This link is valid for "
+                            + TOKEN_TTL.toMinutes() + " minutes:\n\n" + link
+                            + "\n\nIf you did not request this, you can ignore this e-mail.\n\n— TalentGrid");
         } else {
             log.debug("Forgot-password request for unknown email={}", req.email());
         }

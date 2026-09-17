@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useRef, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Camera, Upload, Plus, X, CheckCircle2,
@@ -61,8 +61,8 @@ function SectionHeader({ icon, title, subtitle }: { icon: React.ReactNode; title
         <span className="text-brass">{icon}</span>
       </div>
       <div>
-        <h2 className="font-serif text-lg font-bold text-navy">{title}</h2>
-        {subtitle && <p className="text-[12px] font-sans text-muted mt-0.5">{subtitle}</p>}
+        <h2 className="font-serif text-xl font-bold text-navy">{title}</h2>
+        {subtitle && <p className="text-[14px] font-sans text-muted mt-0.5">{subtitle}</p>}
       </div>
     </div>
   );
@@ -70,13 +70,13 @@ function SectionHeader({ icon, title, subtitle }: { icon: React.ReactNode; title
 
 function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
-    <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.2em] text-muted mb-1.5">
+    <label className="block text-[12px] font-sans font-semibold uppercase tracking-[0.2em] text-muted mb-1.5">
       {children}{required && <span className="text-red-400 ml-1">*</span>}
     </label>
   );
 }
 
-const inputCls = "w-full px-4 py-3 text-[13px] font-sans text-charcoal placeholder-[#B5AFA6] bg-surface border border-border focus:outline-none focus:border-navy transition-colors duration-150";
+const inputCls = "w-full px-4 py-3 text-[15px] font-sans text-charcoal placeholder-muted-light bg-surface border border-border focus:outline-none focus:border-navy transition-colors duration-150";
 const selectCls = `${inputCls} appearance-none cursor-pointer`;
 
 function SelectWrapper({ children }: { children: React.ReactNode }) {
@@ -91,20 +91,27 @@ function SelectWrapper({ children }: { children: React.ReactNode }) {
 /* ════════════════════════════════════════════════════════════
    MAIN PAGE
    ════════════════════════════════════════════════════════════ */
-export default function ProfilePage() {
+function ProfileForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [user] = useState<AuthUser | null>(() =>
     typeof window !== "undefined" ? getUser() : null
   );
   const [saved,           setSaved]           = useState(false);
   const [saving,          setSaving]          = useState(false);
-  const [activeSection,   setActiveSection]   = useState("basic");
+  const [activeSection,   setActiveSection]   = useState(() => {
+    const requested = searchParams.get("section");
+    const valid = ["basic", "professional", "skills", "experience", "education", "resume"];
+    return requested && valid.includes(requested) ? requested : "basic";
+  });
   const [profileStrength, setProfileStrength] = useState(0);
   const [canApply,        setCanApply]        = useState(false);
 
   /* Photo */
   const photoRef = useRef<HTMLInputElement>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoError,   setPhotoError]   = useState<string | null>(null);
+  const [photoBusy,    setPhotoBusy]    = useState(false);
 
   /* Resume */
   const resumeRef = useRef<HTMLInputElement>(null);
@@ -148,8 +155,14 @@ export default function ProfilePage() {
       totalExp?: number; about?: string; skills?: string[];
       profileStrength?: number; canApply?: boolean;
       hasResume?: boolean; resumeFileName?: string | null;
+      hasPhoto?: boolean;
     }>("/api/profile/me")
       .then((p) => {
+        if (p.hasPhoto) {
+          api.downloadBlob("/api/profile/photo")
+            .then((blob) => setPhotoPreview(URL.createObjectURL(blob)))
+            .catch(() => {/* no photo */});
+        }
         if (p.headline)  setHeadline(p.headline);
         if (p.phone)     setPhone(p.phone.replace(/^\+91\s?/, ""));
         if (p.city)      setCity(p.city);
@@ -164,11 +177,24 @@ export default function ProfilePage() {
   }, [user, router]);
 
   /* ── Photo handler ── */
-  function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    setPhotoPreview(url);
+    setPhotoError(null);
+    setPhotoBusy(true);
+    const previous = photoPreview;
+    setPhotoPreview(URL.createObjectURL(file));
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      await api.upload("/api/profile/photo", fd);
+    } catch (err) {
+      setPhotoPreview(previous);
+      setPhotoError(err instanceof Error ? err.message : "Upload failed. Try a JPG or PNG under 2 MB.");
+    } finally {
+      setPhotoBusy(false);
+      e.target.value = "";
+    }
   }
 
   /* ── Skills ── */
@@ -304,16 +330,16 @@ export default function ProfilePage() {
         <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-8">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[9px] font-sans font-semibold uppercase tracking-[0.26em] text-brass mb-1">
+              <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.26em] text-brass mb-1">
                 Candidate Profile
               </p>
-              <h1 className="font-serif text-2xl font-bold text-surface">
+              <h1 className="font-serif text-3xl font-bold text-surface">
                 {user.fullName}
               </h1>
-              <p className="text-[13px] font-sans text-[#7A95B0] mt-1">{user.email}</p>
+              <p className="text-[15px] font-sans text-navy-text mt-1">{user.email}</p>
             </div>
             <Link href="/jobs"
-              className="hidden sm:inline-flex items-center text-[11px] font-sans font-medium uppercase tracking-[0.18em] text-[#7A95B0] hover:text-brass border border-navy-border hover:border-brass px-5 py-2.5 transition-all duration-200">
+              className="hidden sm:inline-flex items-center text-[13px] font-sans font-medium uppercase tracking-[0.18em] text-navy-text hover:text-brass border border-navy-border hover:border-brass px-5 py-2.5 transition-all duration-200">
               Browse Jobs →
             </Link>
           </div>
@@ -334,7 +360,7 @@ export default function ProfilePage() {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={photoPreview} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="font-serif text-3xl font-bold text-surface">
+                    <span className="font-serif text-4xl font-bold text-surface">
                       {user.fullName[0]}
                     </span>
                   )}
@@ -346,14 +372,18 @@ export default function ProfilePage() {
                   <Camera className="w-3.5 h-3.5 text-navy" />
                 </button>
               </div>
-              <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
+              <input ref={photoRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handlePhoto} />
               <button
                 type="button"
+                disabled={photoBusy}
                 onClick={() => photoRef.current?.click()}
-                className="text-[11px] font-sans text-muted hover:text-navy transition-colors">
-                Upload Photo
+                className="text-[13px] font-sans text-muted hover:text-navy transition-colors disabled:opacity-60">
+                {photoBusy ? "Uploading…" : photoPreview ? "Change Photo" : "Upload Photo"}
               </button>
-              <p className="text-[10px] font-sans text-muted/60 mt-1">JPG, PNG · Max 2MB</p>
+              {photoError && (
+                <p className="mt-2 text-[13px] font-sans text-red-600">{photoError}</p>
+              )}
+              <p className="text-[12px] font-sans text-muted/60 mt-1">JPG, PNG · Max 2MB</p>
             </div>
 
             {/* Section nav */}
@@ -372,27 +402,27 @@ export default function ProfilePage() {
                   }`}
                 >
                   <span className={activeSection === s.id ? "text-brass" : ""}>{s.icon}</span>
-                  <span className="text-[12px] font-sans font-medium">{s.label}</span>
+                  <span className="text-[14px] font-sans font-medium">{s.label}</span>
                 </button>
               ))}
             </nav>
 
             {/* Profile completion */}
             <div className="mt-4 bg-surface border border-border p-5">
-              <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-muted mb-3">
+              <p className="text-[12px] font-sans font-semibold uppercase tracking-[0.18em] text-muted mb-3">
                 Profile Strength
               </p>
               <div className="w-full h-1.5 bg-border rounded-full overflow-hidden">
                 <div className="h-full bg-brass rounded-full transition-all duration-500"
                   style={{ width: `${profileStrength}%` }} />
               </div>
-              <p className="text-[12px] font-sans font-semibold text-brass mt-1">{profileStrength}%</p>
+              <p className="text-[14px] font-sans font-semibold text-brass mt-1">{profileStrength}%</p>
               {canApply ? (
-                <p className="text-[10px] font-sans text-green-600 mt-1 flex items-center gap-1">
+                <p className="text-[12px] font-sans text-green-600 mt-1 flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3" /> Ready to apply
                 </p>
               ) : (
-                <p className="text-[10px] font-sans text-muted mt-1">
+                <p className="text-[12px] font-sans text-muted mt-1">
                   Add headline, skills & resume to apply.
                 </p>
               )}
@@ -415,14 +445,14 @@ export default function ProfilePage() {
                       <input type="text" value={headline} onChange={(e) => setHeadline(e.target.value)}
                         placeholder="e.g. Senior Project Manager · 8 Years · PMP Certified"
                         className={inputCls} />
-                      <p className="mt-1 text-[10px] font-sans text-muted">This appears below your name in search results.</p>
+                      <p className="mt-1 text-[12px] font-sans text-muted">This appears below your name in search results.</p>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       <div>
                         <FieldLabel required>Mobile Number</FieldLabel>
                         <div className="flex">
-                          <span className="inline-flex items-center px-3 text-[13px] font-sans text-muted bg-surface border border-border border-r-0 select-none">+91</span>
+                          <span className="inline-flex items-center px-3 text-[15px] font-sans text-muted bg-surface border border-border border-r-0 select-none">+91</span>
                           <input type="tel" value={phone} maxLength={10}
                             onChange={(e) => setPhone(e.target.value)}
                             placeholder="9876543210" className={`${inputCls} border-l-0 flex-1`} />
@@ -463,7 +493,7 @@ export default function ProfilePage() {
                       <textarea rows={4} value={about} onChange={(e) => setAbout(e.target.value)}
                         placeholder="Write a short summary about your experience, strengths, and what you're looking for..."
                         className={`${inputCls} resize-none`} />
-                      <p className="mt-1 text-[10px] font-sans text-muted">{about.length}/500 characters</p>
+                      <p className="mt-1 text-[12px] font-sans text-muted">{about.length}/500 characters</p>
                     </div>
                   </div>
 
@@ -521,10 +551,10 @@ export default function ProfilePage() {
                       <div className="flex items-center gap-3">
                         <input type="number" value={salaryMin} onChange={(e) => setSalaryMin(e.target.value)}
                           placeholder="Min" className={`${inputCls} flex-1`} />
-                        <span className="text-muted font-sans text-[13px]">to</span>
+                        <span className="text-muted font-sans text-[15px]">to</span>
                         <input type="number" value={salaryMax} onChange={(e) => setSalaryMax(e.target.value)}
                           placeholder="Max" className={`${inputCls} flex-1`} />
-                        <span className="text-[12px] font-sans text-muted whitespace-nowrap">₹ LPA</span>
+                        <span className="text-[14px] font-sans text-muted whitespace-nowrap">₹ LPA</span>
                       </div>
                     </div>
 
@@ -534,7 +564,7 @@ export default function ProfilePage() {
                         {EMPLOYMENT_TYPES.map((t) => (
                           <button key={t} type="button"
                             onClick={() => toggle(empTypes, t, setEmpTypes)}
-                            className={`px-4 py-2 text-[12px] font-sans border transition-colors duration-150 ${
+                            className={`px-4 py-2 text-[14px] font-sans border transition-colors duration-150 ${
                               empTypes.includes(t)
                                 ? "bg-navy text-surface border-navy"
                                 : "bg-surface text-muted border-border hover:border-navy/30"
@@ -551,7 +581,7 @@ export default function ProfilePage() {
                         {LOCATIONS.map((l) => (
                           <button key={l} type="button"
                             onClick={() => toggle(prefLocations, l, setPrefLocations)}
-                            className={`px-4 py-2 text-[12px] font-sans border transition-colors duration-150 ${
+                            className={`px-4 py-2 text-[14px] font-sans border transition-colors duration-150 ${
                               prefLocations.includes(l)
                                 ? "bg-navy text-surface border-navy"
                                 : "bg-surface text-muted border-border hover:border-navy/30"
@@ -585,7 +615,7 @@ export default function ProfilePage() {
                           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addSkill(skillInput); }}}
                           placeholder="e.g. JIRA, Agile, PMP..." className={`${inputCls} flex-1`} />
                         <button type="button" onClick={() => addSkill(skillInput)}
-                          className="px-5 py-3 text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-surface bg-navy hover:bg-navy-mid transition-colors">
+                          className="px-5 py-3 text-[13px] font-sans font-semibold uppercase tracking-[0.18em] text-surface bg-navy hover:bg-navy-mid transition-colors">
                           Add
                         </button>
                       </div>
@@ -598,10 +628,10 @@ export default function ProfilePage() {
                         <div className="flex flex-wrap gap-2">
                           {skills.map((s) => (
                             <span key={s}
-                              className="flex items-center gap-2 px-3 py-1.5 bg-navy text-surface text-[12px] font-sans">
+                              className="flex items-center gap-2 px-3 py-1.5 bg-navy text-surface text-[14px] font-sans">
                               {s}
                               <button type="button" onClick={() => removeSkill(s)}
-                                className="text-[#8AA0BA] hover:text-brass transition-colors">
+                                className="text-navy-text hover:text-brass transition-colors">
                                 <X className="w-3 h-3" />
                               </button>
                             </span>
@@ -616,7 +646,7 @@ export default function ProfilePage() {
                       <div className="flex flex-wrap gap-2">
                         {SKILL_SUGGESTIONS.filter((s) => !skills.includes(s)).map((s) => (
                           <button key={s} type="button" onClick={() => addSkill(s)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 border border-border text-[12px] font-sans text-muted hover:border-navy hover:text-navy transition-colors duration-150">
+                            className="flex items-center gap-1.5 px-3 py-1.5 border border-border text-[14px] font-sans text-muted hover:border-navy hover:text-navy transition-colors duration-150">
                             <Plus className="w-3 h-3" />{s}
                           </button>
                         ))}
@@ -640,7 +670,7 @@ export default function ProfilePage() {
                     {experiences.map((exp, i) => (
                       <div key={exp.id} className="border border-border p-6 relative">
                         <div className="flex items-center justify-between mb-4">
-                          <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-brass">
+                          <p className="text-[12px] font-sans font-semibold uppercase tracking-[0.18em] text-brass">
                             Position {i + 1}
                           </p>
                           <button type="button" onClick={() => removeExp(exp.id)}
@@ -710,7 +740,7 @@ export default function ProfilePage() {
                             <input type="checkbox" checked={exp.current}
                               onChange={(e) => updExp(exp.id, "current", e.target.checked)}
                               className="w-4 h-4 border-border" />
-                            <span className="text-[12px] font-sans text-muted">I currently work here</span>
+                            <span className="text-[14px] font-sans text-muted">I currently work here</span>
                           </label>
 
                           <div>
@@ -725,7 +755,7 @@ export default function ProfilePage() {
                     ))}
 
                     <button type="button" onClick={addExp}
-                      className="w-full py-3.5 border border-dashed border-border text-[12px] font-sans text-muted hover:border-navy hover:text-navy transition-colors flex items-center justify-center gap-2">
+                      className="w-full py-3.5 border border-dashed border-border text-[14px] font-sans text-muted hover:border-navy hover:text-navy transition-colors flex items-center justify-center gap-2">
                       <Plus className="w-4 h-4" /> Add Work Experience
                     </button>
                   </div>
@@ -746,7 +776,7 @@ export default function ProfilePage() {
                     {educations.map((edu, i) => (
                       <div key={edu.id} className="border border-border p-6">
                         <div className="flex items-center justify-between mb-4">
-                          <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-brass">
+                          <p className="text-[12px] font-sans font-semibold uppercase tracking-[0.18em] text-brass">
                             Qualification {i + 1}
                           </p>
                           <button type="button" onClick={() => removeEdu(edu.id)}
@@ -800,7 +830,7 @@ export default function ProfilePage() {
                     ))}
 
                     <button type="button" onClick={addEdu}
-                      className="w-full py-3.5 border border-dashed border-border text-[12px] font-sans text-muted hover:border-navy hover:text-navy transition-colors flex items-center justify-center gap-2">
+                      className="w-full py-3.5 border border-dashed border-border text-[14px] font-sans text-muted hover:border-navy hover:text-navy transition-colors flex items-center justify-center gap-2">
                       <Plus className="w-4 h-4" /> Add Education
                     </button>
                   </div>
@@ -827,14 +857,14 @@ export default function ProfilePage() {
                           <FileText className="w-5 h-5 text-brass" />
                         </div>
                         <div>
-                          <p className="text-[13px] font-sans font-medium text-charcoal">Resume on file</p>
-                          <p className="text-[11px] font-sans text-muted mt-0.5 break-all">{existingResume}</p>
+                          <p className="text-[15px] font-sans font-medium text-charcoal">Resume on file</p>
+                          <p className="text-[13px] font-sans text-muted mt-0.5 break-all">{existingResume}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
                         <button type="button" onClick={() => resumeRef.current?.click()}
                           disabled={resumeUploading}
-                          className="text-[11px] font-sans font-semibold uppercase tracking-[0.16em] text-navy hover:text-brass transition-colors disabled:opacity-60">
+                          className="text-[13px] font-sans font-semibold uppercase tracking-[0.16em] text-navy hover:text-brass transition-colors disabled:opacity-60">
                           Replace
                         </button>
                         <button type="button" onClick={removeResume}
@@ -852,8 +882,8 @@ export default function ProfilePage() {
                           <FileText className="w-5 h-5 text-brass" />
                         </div>
                         <div>
-                          <p className="text-[13px] font-sans font-medium text-charcoal">{resumeFile.name}</p>
-                          <p className="text-[11px] font-sans text-muted mt-0.5">
+                          <p className="text-[15px] font-sans font-medium text-charcoal">{resumeFile.name}</p>
+                          <p className="text-[13px] font-sans text-muted mt-0.5">
                             {(resumeFile.size / 1024 / 1024).toFixed(2)} MB · pending save
                           </p>
                         </div>
@@ -872,21 +902,21 @@ export default function ProfilePage() {
                         <Upload className="w-5 h-5 text-muted group-hover:text-brass transition-colors" />
                       </div>
                       <div className="text-center">
-                        <p className="text-[13px] font-sans font-medium text-charcoal group-hover:text-navy transition-colors">
+                        <p className="text-[15px] font-sans font-medium text-charcoal group-hover:text-navy transition-colors">
                           Click to upload your resume
                         </p>
-                        <p className="text-[11px] font-sans text-muted mt-1">PDF, DOC, DOCX · Max 5MB</p>
+                        <p className="text-[13px] font-sans text-muted mt-1">PDF, DOC, DOCX · Max 5MB</p>
                       </div>
                     </button>
                   )}
 
                   {resumeError && (
-                    <p className="mt-4 text-[12px] font-sans text-red-600 bg-red-50 border border-red-200 px-3 py-2">
+                    <p className="mt-4 text-[14px] font-sans text-red-600 bg-red-50 border border-red-200 px-3 py-2">
                       {resumeError}
                     </p>
                   )}
                   {resumeUploading && !resumeError && (
-                    <p className="mt-4 text-[12px] font-sans text-muted">Uploading…</p>
+                    <p className="mt-4 text-[14px] font-sans text-muted">Uploading…</p>
                   )}
 
                   <div className="mt-8 flex justify-end">
@@ -903,10 +933,18 @@ export default function ProfilePage() {
   );
 }
 
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-ivory" />}>
+      <ProfileForm />
+    </Suspense>
+  );
+}
+
 function SaveButton({ saved, saving }: { saved: boolean; saving: boolean }) {
   return (
     <button type="submit" disabled={saving}
-      className={`flex items-center gap-2 px-8 py-3 text-[11px] font-sans font-semibold uppercase tracking-[0.2em] transition-all duration-200 disabled:opacity-60 ${
+      className={`flex items-center gap-2 px-8 py-3 text-[13px] font-sans font-semibold uppercase tracking-[0.2em] transition-all duration-200 disabled:opacity-60 ${
         saved ? "bg-green-600 text-white" : "bg-navy hover:bg-navy-mid text-surface"
       }`}>
       {saved ? <><CheckCircle2 className="w-4 h-4" /> Saved</> : saving ? "Saving…" : "Save Changes →"}

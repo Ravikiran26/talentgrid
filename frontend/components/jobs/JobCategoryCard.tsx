@@ -14,29 +14,29 @@ export default function JobCategoryCard({ category, index }: Props) {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
         {/* Number */}
         <div className="md:col-span-1">
-          <span className="font-serif text-3xl font-bold text-brass leading-none select-none">
+          <span className="font-serif text-4xl font-bold text-brass leading-none select-none">
             {num}
           </span>
         </div>
 
         {/* Text */}
         <div className="md:col-span-7">
-          <h3 className="font-serif text-2xl font-semibold text-surface tracking-tight group-hover:text-brass transition-colors duration-200">
+          <h3 className="font-serif text-3xl font-semibold text-surface tracking-tight group-hover:text-brass transition-colors duration-200">
             {category.name.toUpperCase()}
           </h3>
-          <p className="mt-2.5 text-[13px] font-sans text-[#7A95B0] leading-relaxed max-w-lg">
+          <p className="mt-2.5 text-[15px] font-sans text-navy-text leading-relaxed max-w-lg">
             {category.description}
           </p>
         </div>
 
         {/* Count + CTA */}
         <div className="md:col-span-4 flex md:flex-col md:items-end items-center gap-4 md:gap-3">
-          <span className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-brass">
+          <span className="text-[13px] font-sans font-semibold uppercase tracking-[0.18em] text-brass">
             {category.jobCount} Opportunities
           </span>
           <Link
             href={`/jobs?category=${category.slug}`}
-            className="text-[11px] font-sans font-medium uppercase tracking-[0.16em] text-[#7A95B0] border border-navy-border hover:border-brass hover:text-brass px-5 py-2 transition-all duration-200"
+            className="text-[13px] font-sans font-medium uppercase tracking-[0.16em] text-navy-text border border-navy-border hover:border-brass hover:text-brass px-5 py-2 transition-all duration-200"
             aria-label={`Explore ${category.name} roles`}
           >
             Explore →

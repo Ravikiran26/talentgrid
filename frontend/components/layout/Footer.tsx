@@ -38,7 +38,7 @@ const cols = [
 
 export default function Footer() {
   return (
-    <footer className="bg-navy text-[#8AA0BA]">
+    <footer className="bg-navy text-navy-text">
       <div className="h-[2px] bg-brass" />
 
       <div className="max-w-[1280px] mx-auto px-6 lg:px-10 pt-14 pb-10">
@@ -49,20 +49,20 @@ export default function Footer() {
           {/* Brand */}
           <div className="lg:col-span-2">
             <Link href="/" className="inline-block">
-              <div className="font-serif text-[1.4rem] font-bold text-surface tracking-tight leading-none">
+              <div className="font-serif text-[1.54rem] font-bold text-surface tracking-tight leading-none">
                 TalentGrid
               </div>
-              <div className="text-[9px] font-sans font-semibold uppercase tracking-[0.25em] text-brass mt-1.5">
+              <div className="text-[11px] font-sans font-semibold uppercase tracking-[0.25em] text-brass mt-1.5">
                 Executive Careers · India
               </div>
             </Link>
-            <p className="mt-5 text-[13px] text-[#6A8099] leading-relaxed max-w-[240px]">
+            <p className="mt-5 text-[15px] font-medium text-navy-text leading-relaxed max-w-[240px]">
               A focused recruitment platform for experienced professionals and
               selective employers across India.
             </p>
             <div className="mt-6 flex gap-2">
               {["Technology", "Management", "Operations"].map((tag) => (
-                <span key={tag} className="text-[9px] font-sans font-semibold uppercase tracking-[0.14em] text-[#3D5570] border border-navy-border px-2 py-1">
+                <span key={tag} className="text-[11px] font-sans font-semibold uppercase tracking-[0.14em] text-navy-text border border-navy-text-dim/50 px-2 py-1">
                   {tag}
                 </span>
               ))}
@@ -72,7 +72,7 @@ export default function Footer() {
           {/* Link columns */}
           {cols.map((col) => (
             <div key={col.title}>
-              <h3 className="text-[10px] font-sans font-semibold uppercase tracking-[0.22em] text-brass mb-4">
+              <h3 className="text-[12px] font-sans font-semibold uppercase tracking-[0.22em] text-brass mb-4">
                 {col.title}
               </h3>
               <ul className="space-y-3">
@@ -80,7 +80,7 @@ export default function Footer() {
                   <li key={l.label}>
                     <Link
                       href={l.href}
-                      className="text-[13px] font-sans text-[#6A8099] hover:text-surface transition-colors duration-150">
+                      className="text-[15px] font-sans font-medium text-navy-text hover:text-surface transition-colors duration-150">
                       {l.label}
                     </Link>
                   </li>
@@ -92,11 +92,11 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <p className="text-[11px] font-sans text-[#3D5570]">
+          <p className="text-[13px] font-sans font-medium text-navy-text-dim">
             &copy; {new Date().getFullYear()} TalentGrid. All rights reserved.
           </p>
-          <p className="text-[11px] font-sans text-[#3D5570]">
-            Built for serious PM careers in India.
+          <p className="text-[13px] font-sans font-medium text-navy-text-dim">
+            Powered by <span className="font-semibold text-navy-text">PMAISM</span> · Project Management &amp; Scrum Master Institute
           </p>
         </div>
       </div>

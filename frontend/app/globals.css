@@ -2,27 +2,47 @@
 
 @theme inline {
   /* Fonts */
-  --font-serif: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
-  --font-sans:  var(--font-dm-sans), "DM Sans", system-ui, sans-serif;
+  --font-serif: var(--font-serif-face), "Libre Baskerville", Georgia, serif;
+  --font-sans:  var(--font-sans-face), "Work Sans", system-ui, sans-serif;
 
-  /* ── Brand palette ── */
-  --color-navy:       #0A1828;
-  --color-navy-mid:   #13283D;
-  --color-navy-light: #1A3352;
-  --color-ivory:      #F7F1E6;
-  --color-surface:    #FCFAF6;
-  --color-charcoal:   #201E1A;
-  --color-muted:      #746D64;
-  --color-brass:      #B08D57;
-  --color-brass-light:#C9A96A;
-  --color-burgundy:   #6A293A;
+  /* ── Brand palette ──
+     Token names are historical: `navy` is the deep navy, `brass` the muted gold.
+     Every utility in the app (bg-navy, text-brass, …) resolves through these. */
+  --color-navy:            #071827;   /* deep navy: dark sections, primary buttons */
+  --color-navy-mid:        #102337;   /* secondary navy: hover, raised dark panels */
+  --color-navy-light:      #1B3048;
+  --color-navy-deep:       #04101B;   /* darkest ground, overlay panels */
+  --color-navy-ghost:      #16293D;   /* watermark type on dark */
+  --color-ivory:           #F7F3EB;   /* warm ivory page ground */
+  --color-ivory-deep:      #F0EADF;   /* auth page ground */
+  --color-surface:         #FFFFFF;   /* cards */
+  --color-surface-alt:     #FAF8F3;   /* alternate warm surface */
+  --color-surface-hover:   #FAF8F3;
+  --color-field:           #F4F0E8;   /* filled inputs */
+  --color-track:           #E8E0D2;   /* progress track */
+  --color-charcoal:        #1A2230;   /* body text */
+  --color-muted:           #667085;   /* secondary text */
+  --color-muted-light:     #98A0AE;   /* placeholders */
+  --color-brass:           #B68A45;   /* accent: muted gold, used sparingly */
+  --color-brass-light:     #C9A464;
+  --color-brass-hover:     #9A7436;
+  --color-teal:            #0F8078;   /* optional secondary accent */
+  --color-highlight:       #F6EFE1;   /* gold tint: unread, PRO */
+  --color-highlight-strong:#EFE3CC;
+  --color-highlight-border:#E0CFAC;
+  --color-burgundy:        #7A2E3B;
 
   /* ── Structural ── */
-  --color-border:      #E2D9CB;
-  --color-border-dark: #DDD5C5;
-  --color-navy-border: #1E3A5F;
-  --color-navy-subtle: #162D48;
+  --color-border:          #E6DFD3;   /* subtle warm grey */
+  --color-border-dark:     #D9D0C0;
+  --color-input:           #CFC6B5;
+  --color-navy-border:     #1E3147;   /* rules on dark panels */
+  --color-navy-subtle:     #0D1F31;
+  --color-navy-text:       #A9B6C4;   /* secondary text on dark — 8.9:1 on navy */
+  --color-navy-text-light: #D3DBE3;
+  --color-navy-text-dim:   #8593A3;   /* tertiary text on dark — 5.9:1 on navy */
 }
+
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -36,6 +56,13 @@ body {
   background-color: var(--color-ivory);
   color: var(--color-charcoal);
   font-family: var(--font-sans);
+  font-size: 15px;
 }
 
-::selection { background: #D9CEBA; }
+::selection { background: #E7D8B8; }
+
+/* Libre Baskerville has a much larger x-height than Cormorant Garamond.
+   Normalising it keeps every existing heading size from looking oversized. */
+@layer base {
+  .font-serif { font-size-adjust: 0.46; letter-spacing: -0.01em; }
+}

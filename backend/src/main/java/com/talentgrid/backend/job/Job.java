@@ -105,4 +105,9 @@ public class Job {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "posted_by")
     private User postedBy;
+
+    /** Set when an employer with a company profile posts the job. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
+    private com.talentgrid.backend.company.Company companyProfile;
 }

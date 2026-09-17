@@ -1,12 +1,17 @@
 import type { Company } from "@/types";
 
+/**
+ * DEMO DATA ONLY — deliberately fictional names.
+ * The employer-trust strip shows organisations that genuinely have open roles in the
+ * database. This list is the fallback shown when the API is unreachable, so it must
+ * never imply a real company partners with TalentGrid.
+ */
 export const featuredCompanies: Company[] = [
-  { id: "1", name: "Infosys", initials: "IN" },
-  { id: "2", name: "Tata Consultancy", initials: "TC" },
-  { id: "3", name: "Wipro", initials: "WP" },
-  { id: "4", name: "HCL Technologies", initials: "HC" },
-  { id: "5", name: "Tech Mahindra", initials: "TM" },
-  { id: "6", name: "Mphasis", initials: "MP" },
-  { id: "7", name: "Zensar", initials: "ZN" },
-  { id: "8", name: "Hexaware", initials: "HX" },
+  { id: "1", name: "Nexora",      initials: "NX" },
+  { id: "2", name: "Vertexis",    initials: "VX" },
+  { id: "3", name: "Cloudwell",   initials: "CW" },
+  { id: "4", name: "StratEdge",   initials: "SE" },
+  { id: "5", name: "PeopleWorks", initials: "PW" },
+  { id: "6", name: "OrionTech",   initials: "OT" },
+  { id: "7", name: "Mahika",      initials: "MK" },
 ];

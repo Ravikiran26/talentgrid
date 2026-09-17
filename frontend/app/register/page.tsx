@@ -6,6 +6,7 @@ import { Eye, EyeOff, AlertCircle, CheckCircle2, Check } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { setSession, type AuthUser } from "@/lib/auth";
 import SocialAuth from "@/components/auth/SocialAuth";
+import StatStrip from "@/components/home/StatStrip";
 
 interface FormData {
   fullName: string;
@@ -109,30 +110,30 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#EDE8DF" }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--color-ivory-deep)" }}>
 
       {/* ── Top navigation bar ── */}
       <div className="bg-surface border-b border-border flex-shrink-0">
         <div className="max-w-[1200px] mx-auto px-6 lg:px-10">
           <div className="flex items-center justify-between h-[58px]">
             <Link href="/" className="flex-shrink-0">
-              <div className="font-serif text-[1.15rem] font-bold text-navy leading-none">TalentGrid</div>
-              <div className="text-[8px] font-sans font-semibold uppercase tracking-[0.24em] text-muted mt-0.5">
+              <div className="font-serif text-[1.26rem] font-bold text-navy leading-none">TalentGrid</div>
+              <div className="text-[10px] font-sans font-semibold uppercase tracking-[0.24em] text-muted mt-0.5">
                 Executive Careers
               </div>
             </Link>
             <nav className="hidden md:flex items-center gap-8">
-              <Link href="/jobs" className="text-[13px] font-sans text-muted hover:text-charcoal transition-colors">Jobs</Link>
-              <Link href="/about" className="text-[13px] font-sans text-muted hover:text-charcoal transition-colors">About</Link>
-              <Link href="/for-employers" className="text-[13px] font-sans text-muted hover:text-charcoal transition-colors">For Employers</Link>
+              <Link href="/jobs" className="text-[15px] font-sans text-muted hover:text-charcoal transition-colors">Jobs</Link>
+              <Link href="/about" className="text-[15px] font-sans text-muted hover:text-charcoal transition-colors">About</Link>
+              <Link href="/for-employers" className="text-[15px] font-sans text-muted hover:text-charcoal transition-colors">For Employers</Link>
             </nav>
             <div className="flex items-center gap-3">
               <Link href="/login"
-                className="text-[12px] font-sans font-medium text-navy border border-navy px-5 py-2 hover:bg-navy hover:text-surface transition-colors duration-150">
+                className="text-[14px] font-sans font-medium text-navy border border-navy px-5 py-2 hover:bg-navy hover:text-surface transition-colors duration-150">
                 Login
               </Link>
               <Link href="/register"
-                className="text-[12px] font-sans font-medium text-surface bg-brass hover:bg-[#9A7A48] px-5 py-2 transition-colors duration-150">
+                className="text-[14px] font-sans font-medium text-surface bg-brass hover:bg-brass-hover px-5 py-2 transition-colors duration-150">
                 Register
               </Link>
             </div>
@@ -152,15 +153,15 @@ export default function RegisterPage() {
             <div className="bg-navy px-10 pt-9 pb-8 relative overflow-hidden">
               <div className="absolute inset-0 opacity-[0.04]" style={{
                 backgroundImage: [
-                  "repeating-linear-gradient(0deg,#B08D57 0,#B08D57 1px,transparent 1px,transparent 60px)",
-                  "repeating-linear-gradient(90deg,#B08D57 0,#B08D57 1px,transparent 1px,transparent 60px)",
+                  "repeating-linear-gradient(0deg,var(--color-brass) 0,var(--color-brass) 1px,transparent 1px,transparent 60px)",
+                  "repeating-linear-gradient(90deg,var(--color-brass) 0,var(--color-brass) 1px,transparent 1px,transparent 60px)",
                 ].join(","),
               }} />
               <div className="relative">
-                <p className="text-[9px] font-sans font-semibold uppercase tracking-[0.3em] text-brass mb-3">
+                <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.3em] text-brass mb-3">
                   {role === "EMPLOYER" ? "Hire smarter" : "Already a member?"}
                 </p>
-                <h2 className="font-serif text-[1.75rem] font-bold text-surface leading-tight">
+                <h2 className="font-serif text-[1.93rem] font-bold text-surface leading-tight">
                   {role === "EMPLOYER"
                     ? <>India&apos;s specialist platform<br />for PM hiring.</>
                     : <>India&apos;s specialist platform<br />for PM professionals.</>}
@@ -176,14 +177,14 @@ export default function RegisterPage() {
                     <div className="mt-0.5 w-5 h-5 bg-navy/8 border border-navy/15 flex items-center justify-center flex-shrink-0">
                       <Check className="w-3 h-3 text-brass" strokeWidth={2.5} />
                     </div>
-                    <span className="text-[13px] font-sans text-charcoal leading-snug">{point}</span>
+                    <span className="text-[15px] font-sans text-charcoal leading-snug">{point}</span>
                   </li>
                 ))}
               </ul>
 
               <div className="mt-9">
                 <Link href="/login"
-                  className="inline-flex items-center gap-2 text-[12px] font-sans font-semibold uppercase tracking-[0.18em] text-navy border border-navy px-7 py-3 hover:bg-navy hover:text-surface transition-all duration-150">
+                  className="inline-flex items-center gap-2 text-[14px] font-sans font-semibold uppercase tracking-[0.18em] text-navy border border-navy px-7 py-3 hover:bg-navy hover:text-surface transition-all duration-150">
                   Sign In →
                 </Link>
               </div>
@@ -191,14 +192,7 @@ export default function RegisterPage() {
 
             {/* Stat strip */}
             <div className="border-t border-border px-10 py-6">
-              <div className="flex items-center">
-                {[["50+", "Open Roles"], ["25+", "Companies"], ["8", "Cities"]].map(([n, l], i, a) => (
-                  <div key={l} className={`flex-1 ${i < a.length - 1 ? "border-r border-border pr-4 mr-4" : ""}`}>
-                    <p className="font-serif text-[1.4rem] font-bold text-navy leading-none">{n}</p>
-                    <p className="text-[9px] font-sans font-semibold uppercase tracking-[0.18em] text-brass mt-1.5">{l}</p>
-                  </div>
-                ))}
-              </div>
+              <StatStrip items={[{ key: "activeJobs", label: "Open Roles" }, { key: "companies", label: "Companies" }, { key: "cities", label: "Cities" }]} />
             </div>
           </div>
 
@@ -214,17 +208,17 @@ export default function RegisterPage() {
                   <div className="w-12 h-12 bg-navy flex items-center justify-center mx-auto mb-5">
                     <CheckCircle2 className="w-6 h-6 text-brass" strokeWidth={1.5} />
                   </div>
-                  <h1 className="font-serif text-2xl font-bold text-navy mb-3">Account Created!</h1>
-                  <p className="text-[13px] font-sans text-muted leading-relaxed mb-8 max-w-[280px] mx-auto">
+                  <h1 className="font-serif text-3xl font-bold text-navy mb-3">Account Created!</h1>
+                  <p className="text-[15px] font-sans text-muted leading-relaxed mb-8 max-w-[280px] mx-auto">
                     {role === "EMPLOYER"
-                      ? <>Welcome to TalentGrid. Your employer account is ready — start posting roles from your dashboard.</>
+                      ? <>Welcome to TalentGrid. Set up your company profile now; you can post roles as soon as our team verifies your account. We&apos;ll e-mail <span className="text-charcoal font-medium">{form.email}</span>.</>
                       : <>Welcome to TalentGrid. We&apos;ll notify you at <span className="text-charcoal font-medium">{form.email}</span> once reviewed.</>
                     }
                   </p>
                   <Link
-                    href={role === "EMPLOYER" ? "/employer/dashboard" : "/jobs"}
-                    className="inline-flex items-center gap-2 text-[12px] font-sans font-semibold uppercase tracking-[0.18em] text-surface bg-navy hover:bg-navy-mid px-8 py-3.5 transition-colors duration-150">
-                    {role === "EMPLOYER" ? "Go to Dashboard →" : "Browse Opportunities →"}
+                    href={role === "EMPLOYER" ? "/employer/dashboard" : "/dashboard"}
+                    className="inline-flex items-center gap-2 text-[14px] font-sans font-semibold uppercase tracking-[0.18em] text-surface bg-navy hover:bg-navy-mid px-8 py-3.5 transition-colors duration-150">
+                    Go to Dashboard →
                   </Link>
                 </div>
               ) : (
@@ -233,26 +227,26 @@ export default function RegisterPage() {
                   <div className="flex mb-6 border border-border">
                     <button type="button"
                       onClick={() => setRole("CANDIDATE")}
-                      className={`flex-1 py-2.5 text-[11px] font-sans font-semibold uppercase tracking-[0.16em] transition-colors ${
+                      className={`flex-1 py-2.5 text-[13px] font-sans font-semibold uppercase tracking-[0.16em] transition-colors ${
                         role === "CANDIDATE" ? "bg-navy text-surface" : "text-muted hover:text-charcoal"
                       }`}>
                       I&apos;m a Candidate
                     </button>
                     <button type="button"
                       onClick={() => setRole("EMPLOYER")}
-                      className={`flex-1 py-2.5 text-[11px] font-sans font-semibold uppercase tracking-[0.16em] transition-colors border-l border-border ${
+                      className={`flex-1 py-2.5 text-[13px] font-sans font-semibold uppercase tracking-[0.16em] transition-colors border-l border-border ${
                         role === "EMPLOYER" ? "bg-navy text-surface" : "text-muted hover:text-charcoal"
                       }`}>
                       I&apos;m an Employer
                     </button>
                   </div>
 
-                  <h1 className="font-serif text-[1.75rem] font-bold text-navy mb-1">
+                  <h1 className="font-serif text-[1.93rem] font-bold text-navy mb-1">
                     {role === "EMPLOYER" ? "Employer Register" : "Register"}
                   </h1>
-                  <p className="text-[12px] font-sans text-muted mb-7">
+                  <p className="text-[14px] font-sans text-muted mb-7">
                     Already registered?{" "}
-                    <Link href="/login" className="text-brass hover:text-[#9A7A48] font-medium transition-colors">
+                    <Link href="/login" className="text-brass hover:text-brass-hover font-medium transition-colors">
                       Login here
                     </Link>
                   </p>
@@ -278,9 +272,9 @@ export default function RegisterPage() {
                         className={inputCls(errors.email)}
                       />
                       {errors.emailTaken && (
-                        <p className="mt-1.5 text-[11px] font-sans text-muted">
+                        <p className="mt-1.5 text-[13px] font-sans text-muted">
                           Already have an account?{" "}
-                          <Link href="/login" className="text-brass hover:text-[#9A7A48] font-medium">
+                          <Link href="/login" className="text-brass hover:text-brass-hover font-medium">
                             Login instead →
                           </Link>
                         </p>
@@ -311,7 +305,7 @@ export default function RegisterPage() {
                           className={`${inputCls(errors.password)} pr-16`}
                         />
                         <button type="button" onClick={() => setShowPwd(!showPwd)}
-                          className="absolute inset-y-0 right-0 px-4 text-[12px] font-sans font-medium text-brass hover:text-[#9A7A48] transition-colors"
+                          className="absolute inset-y-0 right-0 px-4 text-[14px] font-sans font-medium text-brass hover:text-brass-hover transition-colors"
                           aria-label={showPwd ? "Hide" : "Show"}>
                           {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
@@ -329,7 +323,7 @@ export default function RegisterPage() {
                           className={`${inputCls(errors.confirmPassword)} pr-16`}
                         />
                         <button type="button" onClick={() => setShowCfm(!showCfm)}
-                          className="absolute inset-y-0 right-0 px-4 text-[12px] font-sans font-medium text-brass hover:text-[#9A7A48] transition-colors"
+                          className="absolute inset-y-0 right-0 px-4 text-[14px] font-sans font-medium text-brass hover:text-brass-hover transition-colors"
                           aria-label={showCfm ? "Hide" : "Show"}>
                           {showCfm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
@@ -337,19 +331,19 @@ export default function RegisterPage() {
                     </Field>
 
                     {apiError && (
-                      <p className="flex items-center gap-2 text-[12px] font-sans text-red-600 bg-red-50 border border-red-200 px-4 py-3">
+                      <p className="flex items-center gap-2 text-[14px] font-sans text-red-600 bg-red-50 border border-red-200 px-4 py-3">
                         <AlertCircle className="w-4 h-4 flex-shrink-0" />{apiError}
                       </p>
                     )}
 
                     <div className="pt-1">
                       <button type="submit" disabled={loading}
-                        className="w-full py-3.5 text-[13px] font-sans font-semibold text-surface bg-navy hover:bg-navy-mid active:bg-charcoal transition-colors duration-150 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed">
+                        className="w-full py-3.5 text-[15px] font-sans font-semibold text-surface bg-navy hover:bg-navy-mid active:bg-charcoal transition-colors duration-150 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed">
                         {loading ? "Creating Account…" : "Register Now"}
                       </button>
                     </div>
 
-                    <p className="text-[10px] font-sans text-center text-muted leading-relaxed">
+                    <p className="text-[12px] font-sans text-center text-muted leading-relaxed">
                       By registering you agree to our{" "}
                       <Link href="#" className="text-charcoal underline underline-offset-2 hover:text-navy transition-colors">
                         Terms of Service
@@ -368,7 +362,7 @@ export default function RegisterPage() {
 
             {/* Card footer */}
             <div className="border-t border-border px-9 py-4">
-              <p className="text-[10px] font-sans text-muted/60 text-center">
+              <p className="text-[12px] font-sans text-muted/60 text-center">
                 &copy; {new Date().getFullYear()} TalentGrid · Executive Careers · India
               </p>
             </div>
@@ -380,14 +374,14 @@ export default function RegisterPage() {
 }
 
 function inputCls(err?: string) {
-  return `w-full px-4 py-3 text-[13px] font-sans text-charcoal placeholder-[#B8B0A6] bg-white border focus:outline-none transition-colors duration-150 ${
-    err ? "border-red-400" : "border-[#CFCAC2] focus:border-navy"
+  return `w-full px-4 py-3 text-[15px] font-sans text-charcoal placeholder-muted-light bg-white border focus:outline-none transition-colors duration-150 ${
+    err ? "border-red-400" : "border-input focus:border-navy"
   }`;
 }
 
 function prefixCls(err?: string) {
-  return `inline-flex items-center px-3.5 text-[13px] font-sans text-muted bg-[#F0ECE5] border ${
-    err ? "border-red-400" : "border-[#CFCAC2]"
+  return `inline-flex items-center px-3.5 text-[15px] font-sans text-muted bg-field border ${
+    err ? "border-red-400" : "border-input"
   } border-r-0 select-none`;
 }
 
@@ -398,12 +392,12 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-[11px] font-sans font-semibold text-charcoal mb-1.5">
+      <label className="block text-[13px] font-sans font-semibold text-charcoal mb-1.5">
         {label}
       </label>
       {children}
       {error && (
-        <p className="mt-1.5 flex items-center gap-1.5 text-[11px] font-sans text-red-600">
+        <p className="mt-1.5 flex items-center gap-1.5 text-[13px] font-sans text-red-600">
           <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
           {error}
         </p>

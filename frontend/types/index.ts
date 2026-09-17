@@ -18,6 +18,9 @@ export interface Job {
   education?: string;
   aboutCompany?: string;
   openings?: number;
+  active?: boolean;
+  companyId?: string;
+  applicantCount?: number;
 }
 
 export interface JobCategory {
@@ -26,6 +29,8 @@ export interface JobCategory {
   description: string;
   jobCount: number;
   slug: string;
+  /** DB category slugs counted under this level (jobCount is the sum of their live counts). */
+  includes?: string[];
 }
 
 export interface Company {

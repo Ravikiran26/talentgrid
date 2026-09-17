@@ -12,6 +12,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
   const keyword  = typeof params?.q        === "string" ? params.q        : "";
   const location = typeof params?.location === "string" ? params.location : "";
   const sort     = typeof params?.sort     === "string" ? params.sort     : "";
+  const experience = typeof params?.experience === "string" ? params.experience : "";
 
   return (
     <div className="bg-ivory min-h-screen">
@@ -19,13 +20,13 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
       <div className="bg-navy border-b border-navy-border">
         <div className="h-[2px] bg-brass" />
         <div className="max-w-screen-xl mx-auto px-6 lg:px-10 py-10">
-          <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.22em] text-brass mb-2">
+          <p className="text-[12px] font-sans font-semibold uppercase tracking-[0.22em] text-brass mb-2">
             Open Roles
           </p>
-          <h1 className="font-serif text-3xl font-bold text-surface">
+          <h1 className="font-serif text-4xl font-bold text-surface">
             Opportunities
           </h1>
-          <p className="mt-2 text-[13px] text-[#8A9DB5]">
+          <p className="mt-2 text-[15px] text-navy-text">
             Verified project management positions — Coordinator, Manager, and Lead roles.
           </p>
         </div>
@@ -38,6 +39,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
           initialKeyword={keyword}
           initialLocation={location}
           initialSort={sort}
+          initialExperience={experience}
         />
       </div>
     </div>

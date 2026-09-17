@@ -1,11 +1,11 @@
 "use client";
 
-const inputCls = "w-full px-4 py-3 text-[13px] font-sans text-charcoal placeholder-[#B5AFA6] bg-ivory border border-border focus:outline-none focus:border-navy transition-colors duration-150";
+const inputCls = "w-full px-4 py-3 text-[15px] font-sans text-charcoal placeholder-muted-light bg-ivory border border-border focus:outline-none focus:border-navy transition-colors duration-150";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.2em] text-muted mb-1.5">
+      <label className="block text-[12px] font-sans font-semibold uppercase tracking-[0.2em] text-muted mb-1.5">
         {label}
       </label>
       {children}
@@ -36,10 +36,10 @@ export default function EnquiryForm() {
       </Field>
       <div className="pt-1">
         <button type="submit"
-          className="w-full py-3.5 text-[11px] font-sans font-semibold uppercase tracking-[0.22em] text-surface bg-navy hover:bg-navy-mid transition-colors duration-150 focus:outline-none">
+          className="w-full py-3.5 text-[13px] font-sans font-semibold uppercase tracking-[0.22em] text-surface bg-navy hover:bg-navy-mid transition-colors duration-150 focus:outline-none">
           Submit Enquiry →
         </button>
-        <p className="mt-3 text-[11px] font-sans text-muted text-center">
+        <p className="mt-3 text-[13px] font-sans text-muted text-center">
           We respond within one business day.
         </p>
       </div>

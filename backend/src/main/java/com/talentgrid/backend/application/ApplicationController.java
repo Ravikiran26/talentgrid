@@ -1,5 +1,6 @@
 package com.talentgrid.backend.application;
 
+import com.talentgrid.backend.application.dto.ApplicationDetailResponse;
 import com.talentgrid.backend.application.dto.ApplicationResponse;
 import com.talentgrid.backend.application.dto.CreateApplicationRequest;
 import com.talentgrid.backend.config.PageResponses;
@@ -27,6 +28,13 @@ public class ApplicationController {
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody CreateApplicationRequest req) {
         return ResponseEntity.ok(applicationService.apply(principal.user(), req));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApplicationDetailResponse> get(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long id) {
+        return ResponseEntity.ok(applicationService.getMine(principal.user(), id));
     }
 
     @GetMapping("/my")

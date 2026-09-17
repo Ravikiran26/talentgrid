@@ -54,6 +54,15 @@ public class User {
     @Column(nullable = false)
     private CandidateStatus status;
 
+    /** How the account was created. Social accounts get a random, unusable password hash. */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private AuthProvider authProvider = AuthProvider.LOCAL;
+
+    /** Stable subject id from the identity provider (Google / LinkedIn "sub"). */
+    private String providerId;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
@@ -66,6 +75,9 @@ public class User {
     private String about;
 
     private String resumeFile;
+
+    /** Storage key of the profile photo (same store as resumes). */
+    private String photoFile;
 
     @Column(nullable = false)
     @Builder.Default

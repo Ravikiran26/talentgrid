@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Pencil, Trash2, X, MapPin, Briefcase, Users, CheckCircle2, ChevronRight, Mail, Phone, Clock, XCircle } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, X, MapPin, Briefcase, Users, CheckCircle2, ChevronRight, Mail, Phone, Clock, XCircle, FileText, RotateCcw } from "lucide-react";
 import { getUser } from "@/lib/auth";
+import Pager from "@/components/ui/Pager";
 import { api } from "@/lib/api";
 import { formatSalary, formatExperience, formatRelativeDate } from "@/lib/utils";
 import type { Job } from "@/types";
@@ -18,12 +19,58 @@ interface Applicant {
   totalExp?: string;
   headline?: string;
   skills?: string[];
-  status: "APPLIED" | "SHORTLISTED" | "REJECTED";
+  hasResume?: boolean;
+  status: "APPLIED" | "UNDER_REVIEW" | "SHORTLISTED" | "REJECTED";
   appliedAt: string;
 }
 
+/** Shape returned by the backend; flattened into `Applicant` for rendering. */
+interface ApplicantDto {
+  applicationId: number;
+  status: "APPLIED" | "UNDER_REVIEW" | "SHORTLISTED" | "REJECTED";
+  appliedAt: string;
+  candidate: {
+    id: number; fullName: string; email: string; phone?: string | null; headline?: string | null;
+    city?: string | null; totalExp?: number | null; skills?: string[]; resumeFile?: string | null;
+  };
+}
+
+function flattenApplicant(d: ApplicantDto): Applicant {
+  const c = d.candidate;
+  return {
+    id: d.applicationId,
+    candidateId: c.id,
+    fullName: c.fullName ?? "",
+    email: c.email ?? "",
+    phone: c.phone ?? undefined,
+    city: c.city ?? undefined,
+    totalExp: c.totalExp != null ? `${c.totalExp} yrs` : undefined,
+    headline: c.headline ?? undefined,
+    skills: c.skills ?? [],
+    hasResume: !!c.resumeFile,
+    status: d.status,
+    appliedAt: d.appliedAt,
+  };
+}
+
+/** Opens the applicant's resume in a new tab (needs the bearer token, so fetch as a blob). */
+async function openResume(path: string, setBusy: (b: boolean) => void) {
+  setBusy(true);
+  try {
+    const blob = await api.downloadBlob(path);
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank", "noopener");
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  } catch {
+    /* no resume or not permitted */
+  } finally {
+    setBusy(false);
+  }
+}
+
 const APP_STATUS = {
-  APPLIED:     { label: "Applied",      color: "bg-blue-50 text-blue-700 border-blue-200",    dot: "bg-blue-400",  icon: Clock },
+  APPLIED:      { label: "Applied",      color: "bg-blue-50 text-blue-700 border-blue-200",    dot: "bg-blue-400",  icon: Clock },
+  UNDER_REVIEW: { label: "Under Review", color: "bg-amber-50 text-amber-700 border-amber-200", dot: "bg-amber-500", icon: Clock },
   SHORTLISTED: { label: "Shortlisted",  color: "bg-green-50 text-green-700 border-green-200", dot: "bg-green-500", icon: CheckCircle2 },
   REJECTED:    { label: "Not Selected", color: "bg-red-50 text-red-600 border-red-200",        dot: "bg-red-400",   icon: XCircle },
 };
@@ -48,6 +95,18 @@ export default function AdminJobsPage() {
   const [jobs,    setJobs]    = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [search,  setSearch]  = useState("");
+  const [query,   setQuery]   = useState("");
+  const [page,    setPage]    = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [fetching, setFetching] = useState(false);
+  const [view, setView] = useState<"open" | "closed" | "all">("open");
+  const PAGE_SIZE = 20;
+
+  useEffect(() => {
+    const t = setTimeout(() => { setQuery(search.trim()); setPage(0); }, 300);
+    return () => clearTimeout(t);
+  }, [search]);
   const [showForm,    setShowForm]    = useState(false);
   const [editing,     setEditing]     = useState<Job | null>(null);
   const [deleting,    setDeleting]    = useState<string | null>(null);
@@ -56,8 +115,15 @@ export default function AdminJobsPage() {
   const [appsLoading,   setAppsLoading]   = useState(false);
 
   const fetchJobs = useCallback(async () => {
+    setFetching(true);
+    const qs = new URLSearchParams({ page: String(page), size: String(PAGE_SIZE), sort: "postedAt,desc" });
+    if (query) qs.set("q", query);
+    if (view !== "all") qs.set("active", String(view === "open"));
     try {
-      const data = await api.get<Record<string, unknown>[]>("/api/jobs");
+      const res = await api.getPage<Record<string, unknown>>(`/api/admin/jobs?${qs.toString()}`);
+      const data = res.items;
+      setTotalPages(res.totalPages);
+      setTotalCount(res.totalCount);
       setJobs(data.map((j) => ({
         id:                  String(j.id),
         title:               String(j.title ?? ""),
@@ -74,17 +140,20 @@ export default function AdminJobsPage() {
         description:         j.description != null ? String(j.description) : undefined,
         openings:            j.openings != null ? Number(j.openings) : undefined,
         postedAt:            String(j.postedAt ?? ""),
+        active:              j.active !== false,
       })));
     } catch {
       setJobs([]);
     } finally {
       setLoading(false);
+      setFetching(false);
     }
-  }, []);
+  }, [page, query, view]);
 
   useEffect(() => {
     const u = getUser();
     if (!u) { router.push("/login"); return; }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchJobs();
   }, [router, fetchJobs]);
 
@@ -92,8 +161,8 @@ export default function AdminJobsPage() {
     setApplicantsJob(job);
     setAppsLoading(true);
     try {
-      const data = await api.get<Applicant[]>(`/api/admin/jobs/${job.id}/applications`);
-      setApplicants(data);
+      const data = await api.get<ApplicantDto[]>(`/api/admin/jobs/${job.id}/applications`);
+      setApplicants(data.map(flattenApplicant));
     } catch {
       setApplicants([]);
     } finally {
@@ -101,7 +170,7 @@ export default function AdminJobsPage() {
     }
   }
 
-  async function updateAppStatus(appId: string | number, status: "SHORTLISTED" | "REJECTED") {
+  async function updateAppStatus(appId: string | number, status: "UNDER_REVIEW" | "SHORTLISTED" | "REJECTED") {
     try {
       await api.patch(`/api/admin/applications/${appId}/status`, { status });
       setApplicants((prev) =>
@@ -113,7 +182,7 @@ export default function AdminJobsPage() {
   async function handleDelete(id: string) {
     try {
       await api.patch(`/api/jobs/${id}/deactivate`, {});
-      setJobs((prev) => prev.filter((j) => j.id !== id));
+      fetchJobs();
     } catch {
       // silently ignore
     } finally {
@@ -121,19 +190,19 @@ export default function AdminJobsPage() {
     }
   }
 
-  const filtered = jobs.filter((j) => {
-    const kw = search.toLowerCase();
-    return !search ||
-      j.title.toLowerCase().includes(kw) ||
-      j.company.toLowerCase().includes(kw) ||
-      j.location.toLowerCase().includes(kw) ||
-      j.category.toLowerCase().includes(kw);
-  });
+  async function handleReopen(id: string) {
+    try {
+      await api.patch(`/api/jobs/${id}/reactivate`, {});
+      fetchJobs();
+    } catch { /* ignore */ }
+  }
+
+  const filtered = jobs;
 
   if (loading) {
     return (
       <div className="bg-ivory min-h-screen flex items-center justify-center">
-        <p className="text-[13px] font-sans text-muted">Loading jobs…</p>
+        <p className="text-[15px] font-sans text-muted">Loading jobs…</p>
       </div>
     );
   }
@@ -146,18 +215,18 @@ export default function AdminJobsPage() {
         <div className="h-[2px] bg-brass" />
         <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-8 flex flex-col sm:flex-row sm:items-center gap-5 justify-between">
           <div>
-            <p className="text-[9px] font-sans font-semibold uppercase tracking-[0.3em] text-brass mb-1">
+            <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.3em] text-brass mb-1">
               Admin Dashboard
             </p>
-            <h1 className="font-serif text-2xl font-bold text-surface">Job Opportunities</h1>
-            <p className="text-[13px] font-sans text-[#8A9DB5] mt-1">
-              {jobs.length} active {jobs.length === 1 ? "listing" : "listings"}
+            <h1 className="font-serif text-3xl font-bold text-surface">Job Opportunities</h1>
+            <p className="text-[15px] font-sans text-navy-text mt-1">
+              {totalCount} {view === "open" ? "open" : view === "closed" ? "closed" : ""} {totalCount === 1 ? "listing" : "listings"}
             </p>
           </div>
           <button
             type="button"
             onClick={() => { setEditing(null); setShowForm(true); }}
-            className="flex items-center gap-2 text-[11px] font-sans font-semibold uppercase tracking-[0.18em] bg-brass text-navy px-6 py-3 hover:bg-brass/90 transition-colors self-start sm:self-auto"
+            className="flex items-center gap-2 text-[13px] font-sans font-semibold uppercase tracking-[0.18em] bg-brass text-navy px-6 py-3 hover:bg-brass/90 transition-colors self-start sm:self-auto"
           >
             <Plus className="w-4 h-4" /> Post New Job
           </button>
@@ -166,13 +235,24 @@ export default function AdminJobsPage() {
 
       <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-8">
 
+        {/* View tabs */}
+        <div className="flex items-center gap-2 mb-5">
+          {(["open", "closed", "all"] as const).map((v) => (
+            <button key={v} type="button" onClick={() => { setView(v); setPage(0); }}
+              className={`text-[12px] font-sans font-semibold uppercase tracking-[0.16em] px-4 py-2 border transition-colors capitalize ${
+                view === v ? "bg-navy border-navy text-surface" : "border-border text-muted hover:border-navy/40 hover:text-charcoal"}`}>
+              {v}
+            </button>
+          ))}
+        </div>
+
         {/* Search */}
         <div className="relative mb-8 max-w-md">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
           <input
             type="text" value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by title, company, location…"
-            className="w-full pl-11 pr-4 py-3 text-[13px] font-sans text-charcoal placeholder-muted bg-surface border border-border focus:outline-none focus:border-navy transition-colors"
+            className="w-full pl-11 pr-4 py-3 text-[15px] font-sans text-charcoal placeholder-muted bg-surface border border-border focus:outline-none focus:border-navy transition-colors"
           />
         </div>
 
@@ -181,26 +261,29 @@ export default function AdminJobsPage() {
           <div className="bg-surface border border-border">
             {/* Table header */}
             <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 border-b border-border bg-ivory">
-              <p className="col-span-4 text-[9px] font-sans font-semibold uppercase tracking-[0.2em] text-muted">Role</p>
-              <p className="col-span-2 text-[9px] font-sans font-semibold uppercase tracking-[0.2em] text-muted">Location</p>
-              <p className="col-span-2 text-[9px] font-sans font-semibold uppercase tracking-[0.2em] text-muted">Experience</p>
-              <p className="col-span-2 text-[9px] font-sans font-semibold uppercase tracking-[0.2em] text-muted">Salary</p>
-              <p className="col-span-2 text-[9px] font-sans font-semibold uppercase tracking-[0.2em] text-muted text-right">Actions</p>
+              <p className="col-span-4 text-[11px] font-sans font-semibold uppercase tracking-[0.2em] text-muted">Role</p>
+              <p className="col-span-2 text-[11px] font-sans font-semibold uppercase tracking-[0.2em] text-muted">Location</p>
+              <p className="col-span-2 text-[11px] font-sans font-semibold uppercase tracking-[0.2em] text-muted">Experience</p>
+              <p className="col-span-2 text-[11px] font-sans font-semibold uppercase tracking-[0.2em] text-muted">Salary</p>
+              <p className="col-span-2 text-[11px] font-sans font-semibold uppercase tracking-[0.2em] text-muted text-right">Actions</p>
             </div>
 
             {filtered.map((j) => (
               <div key={j.id}
-                className="grid grid-cols-1 md:grid-cols-12 gap-3 px-6 py-5 border-b border-border last:border-b-0 hover:bg-[#FDFAF6] transition-colors items-center">
+                className="grid grid-cols-1 md:grid-cols-12 gap-3 px-6 py-5 border-b border-border last:border-b-0 hover:bg-surface-hover transition-colors items-center">
 
                 {/* Role info */}
                 <div className="md:col-span-4">
-                  <p className="text-[9px] font-sans font-semibold uppercase tracking-[0.2em] text-brass mb-0.5 capitalize">{j.category}</p>
-                  <p className="font-serif text-[1rem] font-semibold text-navy leading-snug">{j.title}</p>
-                  <p className="text-[12px] font-sans text-muted mt-0.5">{j.company}</p>
+                  <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.2em] text-brass mb-0.5 capitalize">
+                    {j.category}
+                    {j.active === false && <span className="ml-2 text-muted normal-case tracking-normal border border-border px-1.5 py-0.5">Closed</span>}
+                  </p>
+                  <p className="font-serif text-[1.1rem] font-semibold text-navy leading-snug">{j.title}</p>
+                  <p className="text-[14px] font-sans text-muted mt-0.5">{j.company}</p>
                   <div className="flex flex-wrap gap-1 mt-2">
-                    <span className="text-[10px] font-sans border border-border px-2 py-0.5 text-muted">{j.employmentType}</span>
+                    <span className="text-[12px] font-sans border border-border px-2 py-0.5 text-muted">{j.employmentType}</span>
                     {j.openings && (
-                      <span className="text-[10px] font-sans border border-border px-2 py-0.5 text-muted flex items-center gap-1">
+                      <span className="text-[12px] font-sans border border-border px-2 py-0.5 text-muted flex items-center gap-1">
                         <Users className="w-3 h-3" />{j.openings} opening{j.openings > 1 ? "s" : ""}
                       </span>
                     )}
@@ -209,14 +292,14 @@ export default function AdminJobsPage() {
 
                 {/* Location */}
                 <div className="md:col-span-2">
-                  <p className="flex items-center gap-1.5 text-[12px] font-sans text-muted">
+                  <p className="flex items-center gap-1.5 text-[14px] font-sans text-muted">
                     <MapPin className="w-3.5 h-3.5 flex-shrink-0" />{j.location}
                   </p>
                 </div>
 
                 {/* Experience */}
                 <div className="md:col-span-2">
-                  <p className="flex items-center gap-1.5 text-[12px] font-sans text-muted">
+                  <p className="flex items-center gap-1.5 text-[14px] font-sans text-muted">
                     <Briefcase className="w-3.5 h-3.5 flex-shrink-0" />
                     {formatExperience(j.experienceMin, j.experienceMax)}
                   </p>
@@ -224,7 +307,7 @@ export default function AdminJobsPage() {
 
                 {/* Salary */}
                 <div className="md:col-span-2">
-                  <p className="text-[12px] font-sans text-muted">
+                  <p className="text-[14px] font-sans text-muted">
                     {formatSalary(j.salaryMin, j.salaryMax)}
                   </p>
                 </div>
@@ -234,35 +317,47 @@ export default function AdminJobsPage() {
                   <button
                     type="button"
                     onClick={() => openApplicants(j)}
-                    className="flex items-center gap-1.5 text-[11px] font-sans font-semibold uppercase tracking-[0.14em] text-brass border border-brass/40 px-3 py-2 hover:bg-brass/10 transition-colors"
+                    className="flex items-center gap-1.5 text-[13px] font-sans font-semibold uppercase tracking-[0.14em] text-brass border border-brass/40 px-3 py-2 hover:bg-brass/10 transition-colors"
                   >
                     <Users className="w-3 h-3" /> Applicants
                   </button>
                   <button
                     type="button"
                     onClick={() => { setEditing(j); setShowForm(true); }}
-                    className="flex items-center gap-1.5 text-[11px] font-sans font-semibold uppercase tracking-[0.14em] text-navy border border-border px-3 py-2 hover:border-navy hover:bg-ivory transition-colors"
+                    className="flex items-center gap-1.5 text-[13px] font-sans font-semibold uppercase tracking-[0.14em] text-navy border border-border px-3 py-2 hover:border-navy hover:bg-ivory transition-colors"
                   >
                     <Pencil className="w-3 h-3" />
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleting(j.id)}
-                    className="flex items-center gap-1.5 text-[11px] font-sans font-semibold uppercase tracking-[0.14em] text-red-500 border border-red-200 px-3 py-2 hover:bg-red-50 transition-colors"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
+                  {j.active === false ? (
+                    <button
+                      type="button"
+                      onClick={() => handleReopen(j.id)}
+                      className="flex items-center gap-1.5 text-[13px] font-sans font-semibold uppercase tracking-[0.14em] text-green-700 border border-green-300 px-3 py-2 hover:bg-green-50 transition-colors"
+                    >
+                      <RotateCcw className="w-3 h-3" /> Reopen
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setDeleting(j.id)}
+                      className="flex items-center gap-1.5 text-[13px] font-sans font-semibold uppercase tracking-[0.14em] text-red-500 border border-red-200 px-3 py-2 hover:bg-red-50 transition-colors"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         ) : (
           <div className="py-20 text-center bg-surface border border-border">
-            <p className="text-[13px] font-sans text-muted">
-              {jobs.length === 0 ? "No jobs posted yet. Use the Post New Job button to add one." : "No jobs match your search."}
+            <p className="text-[15px] font-sans text-muted">
+              {!query ? "No jobs posted yet. Use the Post New Job button to add one." : "No jobs match your search."}
             </p>
           </div>
         )}
+
+        <Pager page={page} totalPages={totalPages} totalCount={totalCount} pageSize={PAGE_SIZE} onChange={setPage} disabled={fetching} />
       </div>
 
       {/* ── Applicants panel ── */}
@@ -289,15 +384,15 @@ export default function AdminJobsPage() {
       {deleting && (
         <div className="fixed inset-0 bg-navy/50 z-50 flex items-center justify-center p-4 backdrop-blur-[2px]">
           <div className="bg-surface w-full max-w-sm p-8 border border-border">
-            <h3 className="font-serif text-xl font-bold text-navy mb-2">Remove this job?</h3>
-            <p className="text-[13px] font-sans text-muted mb-6">This will deactivate the listing. Candidates already applied won't be affected.</p>
+            <h3 className="font-serif text-2xl font-bold text-navy mb-2">Remove this job?</h3>
+            <p className="text-[15px] font-sans text-muted mb-6">This will deactivate the listing. Candidates already applied won&apos;t be affected.</p>
             <div className="flex gap-3">
               <button type="button" onClick={() => handleDelete(deleting)}
-                className="flex-1 py-2.5 text-[11px] font-sans font-semibold uppercase tracking-[0.16em] text-surface bg-red-600 hover:bg-red-700 transition-colors">
+                className="flex-1 py-2.5 text-[13px] font-sans font-semibold uppercase tracking-[0.16em] text-surface bg-red-600 hover:bg-red-700 transition-colors">
                 Remove
               </button>
               <button type="button" onClick={() => setDeleting(null)}
-                className="flex-1 py-2.5 text-[11px] font-sans font-semibold uppercase tracking-[0.16em] text-charcoal border border-border hover:bg-ivory transition-colors">
+                className="flex-1 py-2.5 text-[13px] font-sans font-semibold uppercase tracking-[0.16em] text-charcoal border border-border hover:bg-ivory transition-colors">
                 Cancel
               </button>
             </div>
@@ -314,8 +409,9 @@ function ApplicantsPanel({ job, applicants, loading, onClose, onStatusChange }: 
   applicants: Applicant[];
   loading: boolean;
   onClose: () => void;
-  onStatusChange: (id: string | number, status: "SHORTLISTED" | "REJECTED") => void;
+  onStatusChange: (id: string | number, status: "UNDER_REVIEW" | "SHORTLISTED" | "REJECTED") => void;
 }) {
+  const [resumeBusy, setResumeBusy] = useState<string | number | null>(null);
   return (
     <>
       <div className="fixed inset-0 bg-navy/50 z-40 backdrop-blur-[2px]" onClick={onClose} />
@@ -327,11 +423,11 @@ function ApplicantsPanel({ job, applicants, loading, onClose, onStatusChange }: 
           <div className="h-[2px] bg-brass" />
           <div className="px-8 py-5 flex items-start justify-between">
             <div>
-              <p className="text-[9px] font-sans font-semibold uppercase tracking-[0.3em] text-brass mb-0.5">Applicants</p>
-              <h2 className="font-serif text-lg font-bold text-surface leading-tight">{job.title}</h2>
-              <p className="text-[11px] font-sans text-[#8A9DB5] mt-0.5">{job.company}</p>
+              <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.3em] text-brass mb-0.5">Applicants</p>
+              <h2 className="font-serif text-xl font-bold text-surface leading-tight">{job.title}</h2>
+              <p className="text-[13px] font-sans text-navy-text mt-0.5">{job.company}</p>
             </div>
-            <button type="button" onClick={onClose} className="text-[#8A9DB5] hover:text-surface transition-colors mt-1">
+            <button type="button" onClick={onClose} className="text-navy-text hover:text-surface transition-colors mt-1">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -339,15 +435,15 @@ function ApplicantsPanel({ job, applicants, loading, onClose, onStatusChange }: 
 
         <div className="px-8 py-6">
           {loading ? (
-            <p className="text-[13px] font-sans text-muted text-center py-12">Loading applicants…</p>
+            <p className="text-[15px] font-sans text-muted text-center py-12">Loading applicants…</p>
           ) : applicants.length === 0 ? (
             <div className="text-center py-16">
               <Users className="w-8 h-8 text-muted mx-auto mb-3" />
-              <p className="text-[13px] font-sans text-muted">No applications yet for this role.</p>
+              <p className="text-[15px] font-sans text-muted">No applications yet for this role.</p>
             </div>
           ) : (
             <div className="space-y-4">
-              <p className="text-[11px] font-sans text-muted">{applicants.length} {applicants.length === 1 ? "applicant" : "applicants"}</p>
+              <p className="text-[13px] font-sans text-muted">{applicants.length} {applicants.length === 1 ? "applicant" : "applicants"}</p>
               {applicants.map((a) => {
                 const cfg = APP_STATUS[a.status];
                 return (
@@ -355,22 +451,22 @@ function ApplicantsPanel({ job, applicants, loading, onClose, onStatusChange }: 
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-navy rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-[10px] font-sans font-bold text-brass">
+                          <span className="text-[12px] font-sans font-bold text-brass">
                             {a.fullName.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase()}
                           </span>
                         </div>
                         <div>
-                          <p className="font-serif text-[0.95rem] font-bold text-navy leading-tight">{a.fullName}</p>
-                          {a.headline && <p className="text-[11px] font-sans text-muted mt-0.5 line-clamp-1">{a.headline}</p>}
+                          <p className="font-serif text-[1.04rem] font-bold text-navy leading-tight">{a.fullName}</p>
+                          {a.headline && <p className="text-[13px] font-sans text-muted mt-0.5 line-clamp-1">{a.headline}</p>}
                         </div>
                       </div>
-                      <span className={`flex items-center gap-1.5 text-[10px] font-sans font-semibold px-2 py-1 border flex-shrink-0 ${cfg.color}`}>
+                      <span className={`flex items-center gap-1.5 text-[12px] font-sans font-semibold px-2 py-1 border flex-shrink-0 ${cfg.color}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
                         {cfg.label}
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] font-sans text-muted mb-3">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] font-sans text-muted mb-3">
                       {a.email && (
                         <a href={`mailto:${a.email}`} className="flex items-center gap-1.5 hover:text-navy transition-colors">
                           <Mail className="w-3 h-3" />{a.email}
@@ -384,23 +480,37 @@ function ApplicantsPanel({ job, applicants, loading, onClose, onStatusChange }: 
                     {(a.skills ?? []).length > 0 && (
                       <div className="flex flex-wrap gap-1 mb-3">
                         {(a.skills ?? []).slice(0, 4).map((s) => (
-                          <span key={s} className="text-[9px] font-sans text-muted border border-border px-2 py-0.5">{s}</span>
+                          <span key={s} className="text-[11px] font-sans text-muted border border-border px-2 py-0.5">{s}</span>
                         ))}
                       </div>
                     )}
 
                     <div className="flex items-center justify-between pt-3 border-t border-border">
-                      <span className="text-[10px] font-sans text-muted">Applied {formatRelativeDate(a.appliedAt)}</span>
+<span className="flex items-center gap-3">
+                        <span className="text-[12px] font-sans text-muted">Applied {formatRelativeDate(a.appliedAt)}</span>
+                        {a.hasResume && (
+                          <button type="button" disabled={resumeBusy === a.id}
+                            onClick={() => { setResumeBusy(a.id); openResume(`/api/admin/candidates/${a.candidateId}/resume`, () => setResumeBusy(null)); }}
+                            className="flex items-center gap-1 text-[12px] font-sans font-semibold uppercase tracking-[0.14em] text-navy hover:text-brass transition-colors disabled:opacity-50">
+                            <FileText className="w-3 h-3" /> Resume
+                          </button>
+                        )}
+                      </span>
                       {a.status === "APPLIED" && (
                         <div className="flex gap-2">
                           <button type="button"
+                            onClick={() => onStatusChange(a.id, "UNDER_REVIEW")}
+                            className="text-[12px] font-sans font-semibold uppercase tracking-[0.14em] text-amber-700 border border-amber-300 px-3 py-1.5 hover:bg-amber-50 transition-colors">
+                            Reviewing
+                          </button>
+                          <button type="button"
                             onClick={() => onStatusChange(a.id, "SHORTLISTED")}
-                            className="text-[10px] font-sans font-semibold uppercase tracking-[0.14em] text-green-700 border border-green-300 px-3 py-1.5 hover:bg-green-50 transition-colors">
+                            className="text-[12px] font-sans font-semibold uppercase tracking-[0.14em] text-green-700 border border-green-300 px-3 py-1.5 hover:bg-green-50 transition-colors">
                             Shortlist
                           </button>
                           <button type="button"
                             onClick={() => onStatusChange(a.id, "REJECTED")}
-                            className="text-[10px] font-sans font-semibold uppercase tracking-[0.14em] text-red-600 border border-red-200 px-3 py-1.5 hover:bg-red-50 transition-colors">
+                            className="text-[12px] font-sans font-semibold uppercase tracking-[0.14em] text-red-600 border border-red-200 px-3 py-1.5 hover:bg-red-50 transition-colors">
                             Reject
                           </button>
                         </div>
@@ -408,7 +518,7 @@ function ApplicantsPanel({ job, applicants, loading, onClose, onStatusChange }: 
                       {a.status !== "APPLIED" && (
                         <button type="button"
                           onClick={() => onStatusChange(a.id, a.status === "SHORTLISTED" ? "REJECTED" : "SHORTLISTED")}
-                          className="text-[10px] font-sans text-muted hover:text-navy transition-colors flex items-center gap-1">
+                          className="text-[12px] font-sans text-muted hover:text-navy transition-colors flex items-center gap-1">
                           Change <ChevronRight className="w-3 h-3" />
                         </button>
                       )}
@@ -491,12 +601,12 @@ function JobFormModal({ initial, onClose, onSaved }: {
           <div className="h-[2px] bg-brass" />
           <div className="px-8 py-5 flex items-center justify-between border-b border-navy-border">
             <div>
-              <p className="text-[9px] font-sans font-semibold uppercase tracking-[0.3em] text-brass mb-0.5">Admin</p>
-              <h2 className="font-serif text-lg font-bold text-surface">
+              <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.3em] text-brass mb-0.5">Admin</p>
+              <h2 className="font-serif text-xl font-bold text-surface">
                 {initial ? "Edit Job Listing" : "Post New Opportunity"}
               </h2>
             </div>
-            <button type="button" onClick={onClose} className="text-[#8A9DB5] hover:text-surface transition-colors">
+            <button type="button" onClick={onClose} className="text-navy-text hover:text-surface transition-colors">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -505,10 +615,10 @@ function JobFormModal({ initial, onClose, onSaved }: {
         {success ? (
           <div className="px-8 py-16 flex flex-col items-center text-center">
             <CheckCircle2 className="w-12 h-12 text-green-500 mb-4" />
-            <p className="font-serif text-xl font-bold text-navy mb-1">
+            <p className="font-serif text-2xl font-bold text-navy mb-1">
               {initial ? "Job Updated!" : "Job Posted!"}
             </p>
-            <p className="text-[13px] font-sans text-muted">Listing is now live on TalentGrid.</p>
+            <p className="text-[15px] font-sans text-muted">Listing is now live on TalentGrid.</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="px-8 py-6 space-y-5">
@@ -517,26 +627,26 @@ function JobFormModal({ initial, onClose, onSaved }: {
               <Field label="Job Title *">
                 <input required value={form.title} onChange={(e) => set("title", e.target.value)}
                   placeholder="e.g. Senior Project Manager"
-                  className="w-full px-4 py-2.5 text-[13px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal placeholder-muted" />
+                  className="w-full px-4 py-2.5 text-[15px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal placeholder-muted" />
               </Field>
               <Field label="Company *">
                 <input required value={form.company} onChange={(e) => set("company", e.target.value)}
                   placeholder="e.g. Infosys"
-                  className="w-full px-4 py-2.5 text-[13px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal placeholder-muted" />
+                  className="w-full px-4 py-2.5 text-[15px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal placeholder-muted" />
               </Field>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Location *">
                 <select required value={form.location} onChange={(e) => set("location", e.target.value)}
-                  className="w-full px-4 py-2.5 text-[13px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal">
+                  className="w-full px-4 py-2.5 text-[15px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal">
                   <option value="">Select city</option>
                   {LOCATIONS.map((l) => <option key={l} value={l}>{l}</option>)}
                 </select>
               </Field>
               <Field label="Category *">
                 <select required value={form.category} onChange={(e) => set("category", e.target.value)}
-                  className="w-full px-4 py-2.5 text-[13px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal capitalize">
+                  className="w-full px-4 py-2.5 text-[15px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal capitalize">
                   <option value="">Select category</option>
                   {CATEGORIES.map((c) => <option key={c} value={c} className="capitalize">{c}</option>)}
                 </select>
@@ -546,19 +656,19 @@ function JobFormModal({ initial, onClose, onSaved }: {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Field label="Employment Type">
                 <select value={form.employmentType} onChange={(e) => set("employmentType", e.target.value)}
-                  className="w-full px-4 py-2.5 text-[13px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal">
+                  className="w-full px-4 py-2.5 text-[15px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal">
                   {EMP_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
               </Field>
               <Field label="Min Exp (yrs)">
                 <input type="number" min={0} max={30} value={form.experienceMin}
                   onChange={(e) => set("experienceMin", e.target.value)}
-                  className="w-full px-4 py-2.5 text-[13px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal" />
+                  className="w-full px-4 py-2.5 text-[15px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal" />
               </Field>
               <Field label="Max Exp (yrs)">
                 <input type="number" min={0} max={30} value={form.experienceMax}
                   onChange={(e) => set("experienceMax", e.target.value)}
-                  className="w-full px-4 py-2.5 text-[13px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal" />
+                  className="w-full px-4 py-2.5 text-[15px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal" />
               </Field>
             </div>
 
@@ -567,40 +677,40 @@ function JobFormModal({ initial, onClose, onSaved }: {
                 <input type="number" min={0} value={form.salaryMin}
                   onChange={(e) => set("salaryMin", e.target.value)}
                   placeholder="e.g. 15"
-                  className="w-full px-4 py-2.5 text-[13px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal placeholder-muted" />
+                  className="w-full px-4 py-2.5 text-[15px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal placeholder-muted" />
               </Field>
               <Field label="Salary Max (LPA)">
                 <input type="number" min={0} value={form.salaryMax}
                   onChange={(e) => set("salaryMax", e.target.value)}
                   placeholder="e.g. 25"
-                  className="w-full px-4 py-2.5 text-[13px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal placeholder-muted" />
+                  className="w-full px-4 py-2.5 text-[15px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal placeholder-muted" />
               </Field>
               <Field label="Openings">
                 <input type="number" min={1} value={form.openings}
                   onChange={(e) => set("openings", e.target.value)}
-                  className="w-full px-4 py-2.5 text-[13px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal" />
+                  className="w-full px-4 py-2.5 text-[15px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal" />
               </Field>
             </div>
 
             <Field label="Skills (comma-separated)">
               <input value={form.skillsRaw} onChange={(e) => set("skillsRaw", e.target.value)}
                 placeholder="e.g. Agile, PMP, JIRA, Stakeholder Management"
-                className="w-full px-4 py-2.5 text-[13px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal placeholder-muted" />
+                className="w-full px-4 py-2.5 text-[15px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal placeholder-muted" />
             </Field>
 
             <Field label="Job Description">
               <textarea rows={5} value={form.description} onChange={(e) => set("description", e.target.value)}
                 placeholder="Describe the role, responsibilities, and what you're looking for…"
-                className="w-full px-4 py-2.5 text-[13px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal placeholder-muted resize-none" />
+                className="w-full px-4 py-2.5 text-[15px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal placeholder-muted resize-none" />
             </Field>
 
             <div className="flex gap-3 pt-2">
               <button type="submit" disabled={saving}
-                className="flex-1 py-3 text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-navy bg-brass hover:bg-brass/90 disabled:opacity-60 transition-colors">
+                className="flex-1 py-3 text-[13px] font-sans font-semibold uppercase tracking-[0.18em] text-navy bg-brass hover:bg-brass/90 disabled:opacity-60 transition-colors">
                 {saving ? "Saving…" : initial ? "Save Changes" : "Post Opportunity"}
               </button>
               <button type="button" onClick={onClose}
-                className="px-6 py-3 text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-muted border border-border hover:bg-ivory transition-colors">
+                className="px-6 py-3 text-[13px] font-sans font-semibold uppercase tracking-[0.18em] text-muted border border-border hover:bg-ivory transition-colors">
                 Cancel
               </button>
             </div>
@@ -614,7 +724,7 @@ function JobFormModal({ initial, onClose, onSaved }: {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[9px] font-sans font-semibold uppercase tracking-[0.2em] text-muted mb-1.5">
+      <label className="block text-[11px] font-sans font-semibold uppercase tracking-[0.2em] text-muted mb-1.5">
         {label}
       </label>
       {children}

@@ -8,7 +8,7 @@ import java.util.List;
 
 public record CreateJobRequest(
         @NotBlank @Size(max = 200) String title,
-        @NotBlank @Size(max = 200) String company,
+        @Size(max = 200) String company,
         @Size(max = 10) String companyLogoInitials,
         @NotBlank @Size(max = 200) String location,
         @NotBlank @Size(max = 100) String category,

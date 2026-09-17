@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -46,6 +47,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
         } catch (JwtException | IllegalArgumentException ex) {
             log.debug("Rejected JWT: {}", ex.getMessage());
+            SecurityContextHolder.clearContext();
+        } catch (UsernameNotFoundException ex) {
+            // Valid token for an account that was deleted or changed its e-mail: treat as anonymous.
+            log.debug("JWT subject no longer exists: {}", ex.getMessage());
             SecurityContextHolder.clearContext();
         }
 

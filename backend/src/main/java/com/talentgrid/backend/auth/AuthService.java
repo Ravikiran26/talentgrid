@@ -7,6 +7,7 @@ import com.talentgrid.backend.exception.BadRequestException;
 import com.talentgrid.backend.exception.ConflictException;
 import com.talentgrid.backend.security.JwtService;
 import com.talentgrid.backend.user.CandidateStatus;
+import com.talentgrid.backend.user.NameNormalizer;
 import com.talentgrid.backend.user.Role;
 import com.talentgrid.backend.user.User;
 import com.talentgrid.backend.user.UserRepository;
@@ -30,6 +31,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final com.talentgrid.backend.notification.NotificationService notificationService;
 
     @Transactional
     public AuthResponse register(RegisterRequest req) {
@@ -42,12 +44,11 @@ public class AuthService {
             log.warn("Blocked self-registration attempt as ADMIN for email={}", req.email());
             throw new BadRequestException("Cannot self-register as ADMIN");
         }
-        CandidateStatus status = role == Role.CANDIDATE
-                ? CandidateStatus.UNDER_REVIEW
-                : CandidateStatus.ACTIVE;
+        // Candidates and employers both start under review; admins verify employers before they can post.
+        CandidateStatus status = CandidateStatus.UNDER_REVIEW;
 
         User user = User.builder()
-                .fullName(req.fullName())
+                .fullName(NameNormalizer.normalize(req.fullName()))
                 .email(req.email())
                 .phone(req.phone())
                 .passwordHash(passwordEncoder.encode(req.password()))
@@ -57,7 +58,8 @@ public class AuthService {
 
         User saved = userRepository.save(user);
         log.info("Registered user id={} email={} role={}", saved.getId(), saved.getEmail(), saved.getRole());
-        return buildAuthResponse(saved);
+        if (role == Role.EMPLOYER) notificationService.employerRegistered(saved);
+        return authResponseFor(saved);
     }
 
     public AuthResponse login(LoginRequest req) {
@@ -72,10 +74,11 @@ public class AuthService {
         User user = userRepository.findByEmail(req.email())
                 .orElseThrow(() -> new BadRequestException("Invalid email or password"));
         log.info("Login success user id={} email={}", user.getId(), user.getEmail());
-        return buildAuthResponse(user);
+        return authResponseFor(user);
     }
 
-    private AuthResponse buildAuthResponse(User user) {
+    /** Issues a JWT for an already-authenticated user (password login or social sign-in). */
+    public AuthResponse authResponseFor(User user) {
         String token = jwtService.generateToken(
                 user.getEmail(),
                 Map.of("role", user.getRole().name(), "uid", user.getId())
@@ -88,7 +91,8 @@ public class AuthService {
                         user.getFullName(),
                         user.getEmail(),
                         user.getRole(),
-                        user.getStatus()
+                        user.getStatus(),
+                        user.getAuthProvider()
                 )
         );
     }

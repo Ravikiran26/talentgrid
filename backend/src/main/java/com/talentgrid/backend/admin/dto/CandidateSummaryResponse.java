@@ -19,7 +19,8 @@ public record CandidateSummaryResponse(
         CandidateStatus status,
         Instant appliedAt,
         int profileStrength,
-        boolean hasResume
+        boolean hasResume,
+        boolean hasPhoto
 ) {
     public static CandidateSummaryResponse fromEntity(User u) {
         String resume = u.getResumeFile();
@@ -36,7 +37,8 @@ public record CandidateSummaryResponse(
                 u.getStatus(),
                 u.getCreatedAt(),
                 u.getProfileStrength(),
-                resume != null && !resume.isBlank()
+                resume != null && !resume.isBlank(),
+                u.getPhotoFile() != null && !u.getPhotoFile().isBlank()
         );
     }
 }

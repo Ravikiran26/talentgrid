@@ -26,7 +26,7 @@ public class JobSeeder implements CommandLineRunner {
         }
 
         List<JobSpec> specs = List.of(
-                new JobSpec("Senior Project Manager", "Infos", "Bengaluru", "manager", "Full-time",
+                new JobSpec("Senior Project Manager", "Infosys", "Bengaluru", "manager", "Full-time",
                         6, 10, 18, 28,
                         List.of("Agile", "PMP", "JIRA", "Stakeholder Management", "Risk Management")),
                 new JobSpec("Scrum Master", "Flipkart", "Bengaluru", "scrum-master", "Full-time",
@@ -70,7 +70,28 @@ public class JobSeeder implements CommandLineRunner {
                         List.of("PMP", "Prince2", "Risk Management", "MS Project", "Waterfall")),
                 new JobSpec("PMO Director", "HDFC Bank", "Mumbai", "director", "Full-time",
                         12, null, 40, 60,
-                        List.of("Portfolio Management", "PMO", "Executive Reporting", "Governance", "Strategy"))
+                        List.of("Portfolio Management", "PMO", "Executive Reporting", "Governance", "Strategy")),
+
+                // Several organisations run more than one search at a time, so the
+                // platform figures read like a real marketplace rather than a 1:1 list.
+                new JobSpec("Programme Director", "Infosys", "Pune", "director", "Full-time",
+                        14, null, 45, 65,
+                        List.of("Portfolio Management", "Programme Governance", "P&L", "Executive Reporting", "SAFe")),
+                new JobSpec("Scrum Master", "Infosys", "Hyderabad", "scrum-master", "Full-time",
+                        4, 8, 15, 23,
+                        List.of("Scrum", "JIRA", "Sprint Planning", "Agile Coaching", "Confluence")),
+                new JobSpec("Portfolio Manager", "Accenture", "Bengaluru", "pmo", "Full-time",
+                        10, 14, 30, 44,
+                        List.of("Portfolio Management", "Benefits Realisation", "Governance", "PowerBI", "Prince2")),
+                new JobSpec("Transformation Lead", "TCS", "Bengaluru", "consultant", "Full-time",
+                        9, 14, 26, 40,
+                        List.of("Change Management", "Operating Model", "Cloud Migration", "Stakeholder Management", "PMP")),
+                new JobSpec("Agile Delivery Manager", "Wipro", "Pune", "manager", "Full-time",
+                        7, 11, 19, 29,
+                        List.of("SAFe", "Agile", "JIRA", "Release Planning", "Coaching")),
+                new JobSpec("Project Manager", "Deloitte India", "Mumbai", "manager", "Full-time",
+                        6, 9, 18, 26,
+                        List.of("PMP", "Risk Management", "Stakeholder Management", "MS Project", "Governance"))
         );
 
         for (int i = 0; i < specs.size(); i++) {

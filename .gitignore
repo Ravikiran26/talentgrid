@@ -29,6 +29,7 @@ next-env.d.ts
 .env.local
 .env.*.local
 application-local.properties
+backend/local.properties
 application-dev.properties
 application-prod.properties
 *.pem

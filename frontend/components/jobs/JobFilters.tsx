@@ -3,8 +3,18 @@
 import { useCallback, useState, useRef, useEffect } from "react";
 import { ChevronDown, X } from "lucide-react";
 import { jobCategories } from "@/data/categories";
-import { locations } from "@/data/jobs";
+import { locations as staticLocations } from "@/data/jobs";
+import { api } from "@/lib/api";
 import type { FilterState } from "@/types";
+
+interface Facet { value: string; count: number }
+interface Facets { categories: Facet[]; locations: Facet[] }
+
+function categoryLabel(slug: string): string {
+  const known = jobCategories.find((c) => c.slug === slug);
+  if (known) return known.name;
+  return slug.split(/[-_\s]+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+}
 
 interface Props { filters: FilterState; onChange: (f: FilterState) => void; }
 
@@ -55,7 +65,7 @@ function Dropdown({ label, value, opts, onChange }: {
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className={`flex items-center gap-2 px-3 py-2 text-[12px] font-sans border transition-colors duration-150 whitespace-nowrap focus:outline-none ${
+        className={`flex items-center gap-2 px-3 py-2 text-[14px] font-sans border transition-colors duration-150 whitespace-nowrap focus:outline-none ${
           active
             ? "border-navy bg-navy text-surface"
             : "border-border bg-surface text-muted hover:border-charcoal hover:text-charcoal"
@@ -76,7 +86,7 @@ function Dropdown({ label, value, opts, onChange }: {
               key={o.v}
               type="button"
               onClick={() => { onChange(o.v); setOpen(false); }}
-              className={`w-full text-left px-4 py-2.5 text-[12px] font-sans transition-colors duration-100 ${
+              className={`w-full text-left px-4 py-2.5 text-[14px] font-sans transition-colors duration-100 ${
                 o.v === value
                   ? "bg-navy text-surface"
                   : "text-charcoal hover:bg-ivory"
@@ -93,6 +103,12 @@ function Dropdown({ label, value, opts, onChange }: {
 
 export default function JobFilters({ filters, onChange }: Props) {
   const upd = useCallback((p: Partial<FilterState>) => onChange({ ...filters, ...p }), [filters, onChange]);
+  const [facets, setFacets] = useState<Facets | null>(null);
+
+  useEffect(() => {
+    // Distinct categories / locations that actually exist in the DB; static lists are the fallback.
+    api.get<Facets>("/api/jobs/facets").then(setFacets).catch(() => setFacets(null));
+  }, []);
 
   function handleExp(val: string) {
     if (!val) { upd({ experienceMin: null, experienceMax: null }); return; }
@@ -106,16 +122,20 @@ export default function JobFilters({ filters, onChange }: Props) {
 
   const catOpts = [
     { label: "All categories", v: "" },
-    ...jobCategories.map((c) => ({ label: c.name, v: c.slug })),
+    ...(facets && facets.categories.length > 0
+      ? facets.categories.map((f) => ({ label: `${categoryLabel(f.value)} (${f.count})`, v: f.value }))
+      : jobCategories.map((c) => ({ label: c.name, v: c.slug }))),
   ];
   const locOpts = [
     { label: "All locations", v: "" },
-    ...locations.map((l) => ({ label: l, v: l })),
+    ...(facets && facets.locations.length > 0
+      ? facets.locations.map((f) => ({ label: `${f.value} (${f.count})`, v: f.value }))
+      : staticLocations.map((l) => ({ label: l, v: l }))),
   ];
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-[9px] font-sans font-semibold uppercase tracking-[0.2em] text-muted mr-1 hidden sm:inline">
+      <span className="text-[11px] font-sans font-semibold uppercase tracking-[0.2em] text-muted mr-1 hidden sm:inline">
         Filter
       </span>
       <Dropdown label="Category"   value={filters.category}      opts={catOpts}  onChange={(v) => upd({ category: v })} />

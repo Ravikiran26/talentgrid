@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import EnquiryForm from "./_EnquiryForm";
+import { fetchJobStatsServer } from "@/lib/stats";
 
 export const metadata: Metadata = {
   title: "For Employers",
@@ -37,7 +38,8 @@ const HOW = [
   { step: "4", title: "We support the close",   body: "We facilitate offer discussions, gather feedback, and stay involved until the role is filled." },
 ];
 
-export default function ForEmployersPage() {
+export default async function ForEmployersPage() {
+  const stats = await fetchJobStatsServer();
   return (
     <div className="bg-ivory min-h-screen">
 
@@ -48,25 +50,25 @@ export default function ForEmployersPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
 
             <div className="lg:col-span-7">
-              <p className="text-[9px] font-sans font-semibold uppercase tracking-[0.28em] text-brass mb-5">
+              <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.28em] text-brass mb-5">
                 For Hiring Organisations
               </p>
-              <h1 className="font-serif text-[2.6rem] sm:text-[3.4rem] font-bold text-surface leading-[1.06] tracking-tight">
+              <h1 className="font-serif text-[2.73rem] sm:text-[3.57rem] font-bold text-surface leading-[1.06] tracking-tight">
                 Hire experienced PM professionals —<br />
                 <span className="text-brass/80">without the noise.</span>
               </h1>
-              <p className="mt-7 text-[15px] font-sans text-[#7A95B0] leading-relaxed max-w-lg">
+              <p className="mt-7 text-[17px] font-sans text-navy-text leading-relaxed max-w-lg">
                 TalentGrid delivers a shortlist of pre-screened project management
                 candidates to your team. No CV pile. No time wasted. Just the
                 right people, ready to interview.
               </p>
               <div className="mt-10 flex flex-wrap gap-3">
                 <Link href="/register"
-                  className="inline-flex items-center text-[11px] font-sans font-semibold uppercase tracking-[0.2em] text-navy bg-brass hover:bg-brass/90 px-8 py-3.5 transition-colors duration-150">
+                  className="inline-flex items-center text-[13px] font-sans font-semibold uppercase tracking-[0.2em] text-navy bg-brass hover:bg-brass/90 px-8 py-3.5 transition-colors duration-150">
                   Register as Employer →
                 </Link>
                 <a href="#contact"
-                  className="inline-flex items-center text-[11px] font-sans font-semibold uppercase tracking-[0.2em] text-surface border border-navy-border hover:border-brass hover:text-brass px-8 py-3.5 transition-all duration-200">
+                  className="inline-flex items-center text-[13px] font-sans font-semibold uppercase tracking-[0.2em] text-surface border border-navy-border hover:border-brass hover:text-brass px-8 py-3.5 transition-all duration-200">
                   Submit a Brief
                 </a>
               </div>
@@ -77,11 +79,11 @@ export default function ForEmployersPage() {
                 {[
                   { value: "3–5", label: "Candidates per shortlist" },
                   { value: "100%", label: "Pre-screened profiles" },
-                  { value: "8",   label: "Cities covered" },
+                  { value: stats ? String(stats.cities) : "8", label: "Cities covered" },
                 ].map((s) => (
                   <div key={s.label} className="border-b border-navy-border pb-6 last:border-b-0 last:pb-0">
-                    <p className="font-serif text-[2.2rem] font-bold text-surface leading-none">{s.value}</p>
-                    <p className="text-[9px] font-sans font-semibold uppercase tracking-[0.18em] text-brass mt-2">{s.label}</p>
+                    <p className="font-serif text-[2.42rem] font-bold text-surface leading-none">{s.value}</p>
+                    <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-brass mt-2">{s.label}</p>
                   </div>
                 ))}
               </div>
@@ -94,10 +96,10 @@ export default function ForEmployersPage() {
       <section className="bg-surface border-b border-border">
         <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-16">
           <div className="mb-12">
-            <p className="text-[9px] font-sans font-semibold uppercase tracking-[0.26em] text-brass mb-2">
+            <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.26em] text-brass mb-2">
               Why TalentGrid
             </p>
-            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-navy tracking-tight">
+            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-navy tracking-tight">
               Built differently, for better results.
             </h2>
           </div>
@@ -105,13 +107,13 @@ export default function ForEmployersPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {BENEFITS.map((b) => (
               <div key={b.num} className="border border-border p-8 bg-ivory hover:border-navy/20 transition-colors duration-200">
-                <span className="font-serif text-2xl font-bold text-brass/40 leading-none block mb-4">
+                <span className="font-serif text-3xl font-bold text-brass/40 leading-none block mb-4">
                   {b.num}
                 </span>
-                <h3 className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-navy mb-3">
+                <h3 className="text-[13px] font-sans font-semibold uppercase tracking-[0.18em] text-navy mb-3">
                   {b.title}
                 </h3>
-                <p className="text-[13px] font-sans text-muted leading-relaxed">{b.body}</p>
+                <p className="text-[15px] font-sans text-muted leading-relaxed">{b.body}</p>
               </div>
             ))}
           </div>
@@ -122,10 +124,10 @@ export default function ForEmployersPage() {
       <section className="bg-ivory border-b border-border">
         <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-16">
           <div className="mb-12">
-            <p className="text-[9px] font-sans font-semibold uppercase tracking-[0.26em] text-brass mb-2">
+            <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.26em] text-brass mb-2">
               The Process
             </p>
-            <h2 className="font-serif text-2xl font-bold text-navy tracking-tight">
+            <h2 className="font-serif text-3xl font-bold text-navy tracking-tight">
               From brief to hire.
             </h2>
           </div>
@@ -135,15 +137,15 @@ export default function ForEmployersPage() {
               <div key={item.step}
                 className="group grid grid-cols-12 gap-6 items-start py-8 border-b border-border hover:bg-surface transition-colors duration-150 px-0 hover:px-4">
                 <div className="col-span-1">
-                  <span className="font-serif text-2xl font-bold text-brass/40 leading-none">{item.step}</span>
+                  <span className="font-serif text-3xl font-bold text-brass/40 leading-none">{item.step}</span>
                 </div>
                 <div className="col-span-11 sm:col-span-4">
-                  <h3 className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-navy">
+                  <h3 className="text-[13px] font-sans font-semibold uppercase tracking-[0.18em] text-navy">
                     {item.title}
                   </h3>
                 </div>
                 <div className="col-span-11 sm:col-span-7 col-start-2 sm:col-start-auto">
-                  <p className="text-[13px] font-sans text-muted leading-relaxed">{item.body}</p>
+                  <p className="text-[15px] font-sans text-muted leading-relaxed">{item.body}</p>
                 </div>
               </div>
             ))}
@@ -154,7 +156,7 @@ export default function ForEmployersPage() {
       {/* ── Roles we fill ── */}
       <section className="bg-navy border-b border-navy-border">
         <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-14">
-          <p className="text-[9px] font-sans font-semibold uppercase tracking-[0.26em] text-brass mb-6">
+          <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.26em] text-brass mb-6">
             Roles We Fill
           </p>
           <div className="flex flex-wrap gap-2">
@@ -164,7 +166,7 @@ export default function ForEmployersPage() {
               "IT Project Manager", "Cloud Project Manager", "AI Project Manager",
             ].map((role) => (
               <span key={role}
-                className="text-[12px] font-sans text-[#8AA0BA] border border-navy-border px-4 py-2">
+                className="text-[14px] font-sans text-navy-text border border-navy-border px-4 py-2">
                 {role}
               </span>
             ))}
@@ -178,14 +180,14 @@ export default function ForEmployersPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
 
             <div className="lg:col-span-5">
-              <p className="text-[9px] font-sans font-semibold uppercase tracking-[0.26em] text-brass mb-5">
+              <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.26em] text-brass mb-5">
                 Submit a Brief
               </p>
               <div className="w-8 h-[1px] bg-brass mb-6" />
-              <h2 className="font-serif text-2xl font-bold text-navy mb-4 leading-snug">
+              <h2 className="font-serif text-3xl font-bold text-navy mb-4 leading-snug">
                 Tell us about your hiring need.
               </h2>
-              <p className="text-[13px] font-sans text-muted leading-relaxed">
+              <p className="text-[15px] font-sans text-muted leading-relaxed">
                 Share your role requirements and we&apos;ll come back to you within
                 one business day with our availability and approach.
               </p>

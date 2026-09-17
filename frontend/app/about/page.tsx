@@ -46,13 +46,13 @@ export default function AboutPage() {
         <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-14 lg:py-20">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-end">
             <div className="lg:col-span-7">
-              <p className="text-[9px] font-sans font-semibold uppercase tracking-[0.28em] text-brass mb-4">
+              <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.28em] text-brass mb-4">
                 About TalentGrid
               </p>
-              <h1 className="font-serif text-[2.6rem] sm:text-[3.2rem] font-bold text-surface leading-[1.08] tracking-tight">
+              <h1 className="font-serif text-[2.73rem] sm:text-[3.36rem] font-bold text-surface leading-[1.08] tracking-tight">
                 A more considered approach<br />to recruitment.
               </h1>
-              <p className="mt-6 text-[14px] font-sans text-[#7A95B0] leading-relaxed max-w-lg">
+              <p className="mt-6 text-[16px] font-sans text-navy-text leading-relaxed max-w-lg">
                 TalentGrid was built for one reason: the project management
                 community deserves a recruitment platform that actually understands
                 what they do.
@@ -60,8 +60,8 @@ export default function AboutPage() {
             </div>
             <div className="lg:col-span-5 hidden lg:flex justify-end">
               <div className="border border-navy-border p-8 text-right">
-                <p className="font-serif text-[3.5rem] font-bold text-surface leading-none">PM</p>
-                <p className="text-[9px] font-sans font-semibold uppercase tracking-[0.2em] text-brass mt-2">
+                <p className="font-serif text-[3.68rem] font-bold text-surface leading-none">PM</p>
+                <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.2em] text-brass mt-2">
                   Specialist · Only
                 </p>
               </div>
@@ -75,22 +75,22 @@ export default function AboutPage() {
         <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-16">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
             <div className="lg:col-span-5 lg:border-r lg:border-border lg:pr-14">
-              <p className="text-[9px] font-sans font-semibold uppercase tracking-[0.24em] text-brass mb-5">
+              <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.24em] text-brass mb-5">
                 Our Mission
               </p>
               <div className="w-8 h-[1px] bg-brass mb-6" />
-              <p className="font-serif text-[1.4rem] font-medium text-navy leading-relaxed">
+              <p className="font-serif text-[1.54rem] font-medium text-navy leading-relaxed">
                 To connect India&apos;s most capable project management professionals
                 with organisations that value their expertise.
               </p>
             </div>
             <div className="lg:col-span-7 lg:pl-6 flex flex-col justify-center">
-              <p className="text-[14px] font-sans text-muted leading-relaxed mb-6">
+              <p className="text-[16px] font-sans text-muted leading-relaxed mb-6">
                 Most job platforms optimise for volume — the more listings, the more clicks,
                 the more revenue. We optimise for relevance. Every listing is real. Every
                 candidate is assessed. Every introduction is worth making.
               </p>
-              <p className="text-[14px] font-sans text-muted leading-relaxed">
+              <p className="text-[16px] font-sans text-muted leading-relaxed">
                 TalentGrid is built for PM professionals across India — from entry-level
                 Project Coordinators to experienced Program Managers — who want to take
                 their career seriously and work with employers who do the same.
@@ -104,10 +104,10 @@ export default function AboutPage() {
       <section className="bg-navy border-b border-navy-border">
         <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-16">
           <div className="mb-12">
-            <p className="text-[9px] font-sans font-semibold uppercase tracking-[0.26em] text-brass mb-2">
+            <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.26em] text-brass mb-2">
               How It Works
             </p>
-            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-surface tracking-tight">
+            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-surface tracking-tight">
               The TalentGrid process.
             </h2>
           </div>
@@ -118,13 +118,13 @@ export default function AboutPage() {
                 className={`py-8 px-0 md:px-8 border-b border-navy-border ${
                   i % 2 === 0 ? "md:border-r md:pl-0" : "md:pr-0"
                 } ${i >= HOW.length - 2 ? "border-b-0" : ""}`}>
-                <span className="font-serif text-3xl font-bold text-brass/30 leading-none block mb-4">
+                <span className="font-serif text-4xl font-bold text-brass/30 leading-none block mb-4">
                   {item.num}
                 </span>
-                <h3 className="text-[11px] font-sans font-semibold uppercase tracking-[0.2em] text-surface mb-3">
+                <h3 className="text-[13px] font-sans font-semibold uppercase tracking-[0.2em] text-surface mb-3">
                   {item.title}
                 </h3>
-                <p className="text-[13px] font-sans text-[#7A95B0] leading-relaxed">
+                <p className="text-[15px] font-sans text-navy-text leading-relaxed">
                   {item.body}
                 </p>
               </div>
@@ -137,10 +137,10 @@ export default function AboutPage() {
       <section className="bg-ivory border-b border-border">
         <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-16">
           <div className="mb-10">
-            <p className="text-[9px] font-sans font-semibold uppercase tracking-[0.26em] text-brass mb-2">
+            <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.26em] text-brass mb-2">
               What We Stand For
             </p>
-            <h2 className="font-serif text-2xl font-bold text-navy tracking-tight">
+            <h2 className="font-serif text-3xl font-bold text-navy tracking-tight">
               Our values.
             </h2>
           </div>
@@ -150,10 +150,10 @@ export default function AboutPage() {
               <div key={v.title}
                 className={`p-8 ${i < VALUES.length - 1 ? "border-b sm:border-b-0 sm:border-r border-border" : ""} ${i === 1 ? "lg:border-r border-border" : ""}`}>
                 <div className="w-5 h-[1px] bg-brass mb-5" />
-                <h3 className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-navy mb-3">
+                <h3 className="text-[13px] font-sans font-semibold uppercase tracking-[0.18em] text-navy mb-3">
                   {v.title}
                 </h3>
-                <p className="text-[13px] font-sans text-muted leading-relaxed">{v.body}</p>
+                <p className="text-[15px] font-sans text-muted leading-relaxed">{v.body}</p>
               </div>
             ))}
           </div>
@@ -165,21 +165,21 @@ export default function AboutPage() {
         <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-16">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
             <div className="lg:col-span-8">
-              <p className="text-[9px] font-sans font-semibold uppercase tracking-[0.26em] text-brass mb-5">
+              <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.26em] text-brass mb-5">
                 Get Involved
               </p>
-              <h2 className="font-serif text-2xl sm:text-3xl font-bold text-surface leading-snug tracking-tight">
+              <h2 className="font-serif text-3xl sm:text-4xl font-bold text-surface leading-snug tracking-tight">
                 Whether you&apos;re looking for your next role or your next hire —
                 TalentGrid is the right place to start.
               </h2>
             </div>
             <div className="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col gap-3">
               <Link href="/jobs"
-                className="inline-flex items-center justify-center text-[11px] font-sans font-semibold uppercase tracking-[0.2em] text-navy bg-ivory hover:bg-surface px-7 py-3.5 transition-colors duration-150">
+                className="inline-flex items-center justify-center text-[13px] font-sans font-semibold uppercase tracking-[0.2em] text-navy bg-ivory hover:bg-surface px-7 py-3.5 transition-colors duration-150">
                 Browse Roles →
               </Link>
               <Link href="/for-employers"
-                className="inline-flex items-center justify-center text-[11px] font-sans font-semibold uppercase tracking-[0.2em] text-surface border border-navy-border hover:border-brass hover:text-brass px-7 py-3.5 transition-all duration-200">
+                className="inline-flex items-center justify-center text-[13px] font-sans font-semibold uppercase tracking-[0.2em] text-surface border border-navy-border hover:border-brass hover:text-brass px-7 py-3.5 transition-all duration-200">
                 For Employers →
               </Link>
             </div>

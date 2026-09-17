@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, DM_Sans } from "next/font/google";
+import { Libre_Baskerville, Work_Sans } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/app/_components/AppShell";
 
-const cormorant = Cormorant_Garamond({
+const serif = Libre_Baskerville({
   subsets: ["latin"],
-  variable: "--font-cormorant",
+  variable: "--font-serif-face",
   display: "swap",
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "700"],
 });
 
-const dmSans = DM_Sans({
+const sans = Work_Sans({
   subsets: ["latin"],
-  variable: "--font-dm-sans",
+  variable: "--font-sans-face",
   display: "swap",
   weight: ["400", "500", "600"],
 });
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${cormorant.variable} ${dmSans.variable} h-full`}>
+    <html lang="en" className={`${serif.variable} ${sans.variable} h-full`}>
       <body className="min-h-full flex flex-col bg-ivory text-charcoal antialiased">
         <AppShell>{children}</AppShell>
       </body>

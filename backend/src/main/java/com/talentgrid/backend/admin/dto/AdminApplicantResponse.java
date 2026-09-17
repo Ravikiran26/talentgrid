@@ -27,6 +27,7 @@ public record AdminApplicantResponse(
             List<String> skills,
             String about,
             String resumeFile,
+            boolean hasPhoto,
             int profileStrength,
             CandidateStatus status
     ) {
@@ -42,6 +43,7 @@ public record AdminApplicantResponse(
                     u.getSkills() == null ? java.util.Collections.emptyList() : java.util.List.copyOf(u.getSkills()),
                     u.getAbout(),
                     u.getResumeFile(),
+                    u.getPhotoFile() != null && !u.getPhotoFile().isBlank(),
                     u.getProfileStrength(),
                     u.getStatus()
             );

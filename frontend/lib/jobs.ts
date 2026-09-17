@@ -35,6 +35,9 @@ export function normalizeJob(raw: Record<string, unknown>): Job {
     education:           raw.education != null ? String(raw.education) : undefined,
     aboutCompany:        raw.aboutCompany != null ? String(raw.aboutCompany) : undefined,
     openings:            raw.openings != null ? Number(raw.openings) : undefined,
+    active:              raw.active != null ? Boolean(raw.active) : undefined,
+    companyId:           raw.companyId != null ? String(raw.companyId) : undefined,
+    applicantCount:      raw.applicantCount != null ? Number(raw.applicantCount) : undefined,
   };
 }
 

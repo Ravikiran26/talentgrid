@@ -27,9 +27,15 @@ public record JobResponse(
         String education,
         String aboutCompany,
         Instant postedAt,
-        boolean active
+        boolean active,
+        Long companyId,
+        Long applicantCount
 ) {
     public static JobResponse fromEntity(Job job) {
+        return fromEntity(job, null);
+    }
+
+    public static JobResponse fromEntity(Job job, Long applicantCount) {
         return new JobResponse(
                 job.getId(),
                 job.getTitle(),
@@ -50,7 +56,9 @@ public record JobResponse(
                 job.getEducation(),
                 job.getAboutCompany(),
                 job.getPostedAt(),
-                job.isActive()
+                job.isActive(),
+                job.getCompanyProfile() == null ? null : job.getCompanyProfile().getId(),
+                applicantCount
         );
     }
 }

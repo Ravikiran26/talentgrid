@@ -2,35 +2,19 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Plus, Search, Pencil, Trash2, X, MapPin, Briefcase,
-  Users, CheckCircle2, Clock, XCircle, ChevronRight, Mail, Phone,
+  Users, CheckCircle2, RotateCcw, AlertCircle, Building2,
 } from "lucide-react";
-import { getUser } from "@/lib/auth";
+import { getUser, type AuthUser } from "@/lib/auth";
 import { api } from "@/lib/api";
-import { formatSalary, formatExperience, formatRelativeDate } from "@/lib/utils";
+import { normalizeJob } from "@/lib/jobs";
+import { fetchMyCompany, type CompanyProfile } from "@/lib/company";
+import { formatSalary, formatExperience } from "@/lib/utils";
 import type { Job } from "@/types";
 
 /* ── Types ─────────────────────────────────────────────────── */
-interface Applicant {
-  id: string | number;
-  fullName: string;
-  email: string;
-  phone?: string;
-  city?: string;
-  totalExp?: string;
-  headline?: string;
-  skills?: string[];
-  status: "APPLIED" | "SHORTLISTED" | "REJECTED";
-  appliedAt: string;
-}
-
-const APP_STATUS = {
-  APPLIED:     { label: "Applied",      color: "bg-blue-50 text-blue-700 border-blue-200",    dot: "bg-blue-400",  icon: Clock },
-  SHORTLISTED: { label: "Shortlisted",  color: "bg-green-50 text-green-700 border-green-200", dot: "bg-green-500", icon: CheckCircle2 },
-  REJECTED:    { label: "Not Selected", color: "bg-red-50 text-red-600 border-red-200",        dot: "bg-red-400",   icon: XCircle },
-};
-
 const CATEGORIES = ["manager", "coordinator", "analyst", "scrum-master", "pmo", "consultant", "director"];
 const LOCATIONS   = ["Bengaluru", "Mumbai", "Delhi NCR", "Hyderabad", "Chennai", "Pune", "Kolkata", "Ahmedabad"];
 const EMP_TYPES   = ["Full-time", "Part-time", "Contract", "Freelance", "Internship"];
@@ -46,30 +30,15 @@ export default function EmployerDashboard() {
   const [showForm,    setShowForm]    = useState(false);
   const [editing,     setEditing]     = useState<Job | null>(null);
   const [deleting,    setDeleting]    = useState<string | null>(null);
-  const [applicantsJob, setApplicantsJob] = useState<Job | null>(null);
-  const [applicants,    setApplicants]    = useState<Applicant[]>([]);
-  const [appsLoading,   setAppsLoading]   = useState(false);
+  const [me,        setMe]        = useState<AuthUser | null>(null);
+  const [company,   setCompany]   = useState<CompanyProfile | null | undefined>(undefined);
+  const [view,      setView]      = useState<"open" | "closed" | "all">("open");
+  const [actionErr, setActionErr] = useState<string | null>(null);
 
   const fetchJobs = useCallback(async () => {
     try {
-      const data = await api.get<Record<string, unknown>[]>("/api/employer/jobs");
-      setJobs(data.map((j, idx) => ({
-        id:                  String(j.id ?? idx),
-        title:               String(j.title ?? ""),
-        company:             String(j.company ?? ""),
-        companyLogoInitials: String(j.companyLogoInitials ?? ""),
-        location:            String(j.location ?? ""),
-        category:            String(j.category ?? ""),
-        employmentType:      String(j.employmentType ?? "Full-time"),
-        experienceMin:       Number(j.experienceMin ?? 0),
-        experienceMax:       Number(j.experienceMax ?? 0),
-        salaryMin:           j.salaryMin != null ? Number(j.salaryMin) : undefined,
-        salaryMax:           j.salaryMax != null ? Number(j.salaryMax) : undefined,
-        skills:              Array.isArray(j.skills) ? j.skills.map(String) : [],
-        description:         j.description != null ? String(j.description) : undefined,
-        openings:            j.openings != null ? Number(j.openings) : undefined,
-        postedAt:            String(j.postedAt ?? ""),
-      })));
+      const data = await api.get<Record<string, unknown>[]>("/api/employer/jobs?size=100&sort=postedAt,desc");
+      setJobs(data.map(normalizeJob));
     } catch {
       setJobs([]);
     } finally {
@@ -81,41 +50,41 @@ export default function EmployerDashboard() {
     const u = getUser();
     if (!u) { router.push("/login"); return; }
     if (u.role !== "EMPLOYER") { router.push("/"); return; }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchJobs();
+    api.get<AuthUser>("/api/auth/me").then(setMe).catch(() => setMe(u));
+    fetchMyCompany().then(setCompany).catch(() => setCompany(null));
   }, [router, fetchJobs]);
 
-  async function openApplicants(job: Job) {
-    setApplicantsJob(job);
-    setAppsLoading(true);
-    try {
-      const data = await api.get<Applicant[]>(`/api/employer/jobs/${job.id}/applications`);
-      setApplicants(data);
-    } catch {
-      setApplicants([]);
-    } finally {
-      setAppsLoading(false);
-    }
-  }
+  const verified = me?.status === "ACTIVE";
 
-  async function updateAppStatus(appId: string | number, status: "SHORTLISTED" | "REJECTED") {
-    try {
-      await api.patch(`/api/employer/applications/${appId}/status`, { status });
-      setApplicants((prev) =>
-        prev.map((a) => String(a.id) === String(appId) ? { ...a, status } : a)
-      );
-    } catch { /* ignore */ }
+  function openApplicants(job: Job) {
+    router.push(`/employer/jobs/${job.id}/applicants`);
   }
 
   async function handleDeactivate(id: string) {
     try {
       await api.patch(`/api/employer/jobs/${id}/deactivate`, {});
-      setJobs((prev) => prev.filter((j) => j.id !== id));
+      setJobs((prev) => prev.map((j) => (j.id === id ? { ...j, active: false } : j)));
     } catch { /* ignore */ } finally {
       setDeleting(null);
     }
   }
 
+  async function handleReopen(id: string) {
+    setActionErr(null);
+    try {
+      await api.patch(`/api/employer/jobs/${id}/reactivate`, {});
+      setJobs((prev) => prev.map((j) => (j.id === id ? { ...j, active: true } : j)));
+    } catch (err) {
+      setActionErr(err instanceof Error ? err.message : "Could not reopen this job.");
+    }
+  }
+
+  const openCount = jobs.filter((j) => j.active !== false).length;
   const filtered = jobs.filter((j) => {
+    if (view === "open" && j.active === false) return false;
+    if (view === "closed" && j.active !== false) return false;
     const kw = search.toLowerCase();
     return !search ||
       j.title.toLowerCase().includes(kw) ||
@@ -123,12 +92,12 @@ export default function EmployerDashboard() {
       j.location.toLowerCase().includes(kw);
   });
 
-  const user = getUser();
+  const user = me ?? getUser();
 
   if (loading) {
     return (
       <div className="bg-ivory min-h-screen flex items-center justify-center">
-        <p className="text-[13px] font-sans text-muted">Loading your jobs…</p>
+        <p className="text-[15px] font-sans text-muted">Loading your jobs…</p>
       </div>
     );
   }
@@ -141,17 +110,19 @@ export default function EmployerDashboard() {
         <div className="h-[2px] bg-brass" />
         <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-8 flex flex-col sm:flex-row sm:items-center gap-5 justify-between">
           <div>
-            <p className="text-[9px] font-sans font-semibold uppercase tracking-[0.3em] text-brass mb-1">
+            <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.3em] text-brass mb-1">
               Employer Dashboard
             </p>
-            <h1 className="font-serif text-2xl font-bold text-surface">My Job Listings</h1>
-            <p className="text-[13px] font-sans text-[#8A9DB5] mt-1">
-              {user?.fullName} · {jobs.length} active {jobs.length === 1 ? "listing" : "listings"}
+            <h1 className="font-serif text-3xl font-bold text-surface">My Job Listings</h1>
+            <p className="text-[15px] font-sans text-navy-text mt-1">
+              {company?.name ?? user?.fullName} · {openCount} open {openCount === 1 ? "listing" : "listings"}
             </p>
           </div>
           <button type="button"
+            disabled={!verified}
+            title={verified ? undefined : "Available once your account is verified"}
             onClick={() => { setEditing(null); setShowForm(true); }}
-            className="flex items-center gap-2 text-[11px] font-sans font-semibold uppercase tracking-[0.18em] bg-brass text-navy px-6 py-3 hover:bg-brass/90 transition-colors self-start sm:self-auto">
+            className="flex items-center gap-2 text-[13px] font-sans font-semibold uppercase tracking-[0.18em] bg-brass text-navy px-6 py-3 hover:bg-brass/90 transition-colors self-start sm:self-auto disabled:opacity-50 disabled:cursor-not-allowed">
             <Plus className="w-4 h-4" /> Post New Job
           </button>
         </div>
@@ -159,36 +130,75 @@ export default function EmployerDashboard() {
 
       <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-8">
 
+        {/* Account state banners */}
+        {me && me.status !== "ACTIVE" && (
+          <div className={`mb-6 flex items-start gap-3 px-5 py-4 border text-[15px] font-sans ${
+            me.status === "REJECTED" ? "bg-red-50 border-red-200 text-red-700" : "bg-amber-50 border-amber-200 text-amber-800"}`}>
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <p>
+              {me.status === "REJECTED"
+                ? "Your company account was not approved. Contact TalentGrid if you believe this is a mistake."
+                : "Your company account is pending verification. You can prepare your company profile now and post roles as soon as an administrator approves you."}
+            </p>
+          </div>
+        )}
+        {company === null && (
+          <div className="mb-6 flex items-center justify-between gap-4 px-5 py-4 bg-surface border border-brass/40 text-[15px] font-sans text-charcoal">
+            <p className="flex items-center gap-2"><Building2 className="w-4 h-4 text-brass" /> Add your company profile so candidates see who is hiring.</p>
+            <Link href="/employer/company" className="text-[13px] font-sans font-semibold uppercase tracking-[0.16em] text-navy hover:text-brass whitespace-nowrap">Set up →</Link>
+          </div>
+        )}
+        {actionErr && (
+          <p className="mb-6 flex items-center gap-2 text-[14px] font-sans text-red-600 bg-red-50 border border-red-200 px-4 py-3">
+            <AlertCircle className="w-4 h-4" />{actionErr}
+          </p>
+        )}
+
+        {/* View tabs */}
+        <div className="flex items-center gap-2 mb-5">
+          {(["open", "closed", "all"] as const).map((v) => (
+            <button key={v} type="button" onClick={() => setView(v)}
+              className={`text-[12px] font-sans font-semibold uppercase tracking-[0.16em] px-4 py-2 border transition-colors ${
+                view === v ? "bg-navy border-navy text-surface" : "border-border text-muted hover:border-navy/40 hover:text-charcoal"}`}>
+              {v === "open" ? `Open (${openCount})` : v === "closed" ? `Closed (${jobs.length - openCount})` : `All (${jobs.length})`}
+            </button>
+          ))}
+        </div>
+
         {/* Search */}
         <div className="relative mb-8 max-w-md">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
           <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by title, location…"
-            className="w-full pl-11 pr-4 py-3 text-[13px] font-sans text-charcoal placeholder-muted bg-surface border border-border focus:outline-none focus:border-navy transition-colors" />
+            className="w-full pl-11 pr-4 py-3 text-[15px] font-sans text-charcoal placeholder-muted bg-surface border border-border focus:outline-none focus:border-navy transition-colors" />
         </div>
 
         {filtered.length > 0 ? (
           <div className="bg-surface border border-border">
             {/* Table header */}
             <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 border-b border-border bg-ivory">
-              <p className="col-span-5 text-[9px] font-sans font-semibold uppercase tracking-[0.2em] text-muted">Role</p>
-              <p className="col-span-2 text-[9px] font-sans font-semibold uppercase tracking-[0.2em] text-muted">Location</p>
-              <p className="col-span-2 text-[9px] font-sans font-semibold uppercase tracking-[0.2em] text-muted">Exp / Salary</p>
-              <p className="col-span-3 text-[9px] font-sans font-semibold uppercase tracking-[0.2em] text-muted text-right">Actions</p>
+              <p className="col-span-5 text-[11px] font-sans font-semibold uppercase tracking-[0.2em] text-muted">Role</p>
+              <p className="col-span-2 text-[11px] font-sans font-semibold uppercase tracking-[0.2em] text-muted">Location</p>
+              <p className="col-span-2 text-[11px] font-sans font-semibold uppercase tracking-[0.2em] text-muted">Exp / Salary</p>
+              <p className="col-span-3 text-[11px] font-sans font-semibold uppercase tracking-[0.2em] text-muted text-right">Actions</p>
             </div>
 
             {filtered.map((j) => (
               <div key={j.id}
-                className="grid grid-cols-1 md:grid-cols-12 gap-3 px-6 py-5 border-b border-border last:border-b-0 hover:bg-[#FDFAF6] transition-colors items-center">
+                className="grid grid-cols-1 md:grid-cols-12 gap-3 px-6 py-5 border-b border-border last:border-b-0 hover:bg-surface-hover transition-colors items-center">
 
                 <div className="md:col-span-5">
-                  <p className="text-[9px] font-sans font-semibold uppercase tracking-[0.2em] text-brass mb-0.5 capitalize">{j.category}</p>
-                  <p className="font-serif text-[1rem] font-semibold text-navy leading-snug">{j.title}</p>
-                  <p className="text-[12px] font-sans text-muted mt-0.5">{j.company}</p>
+                  <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.2em] text-brass mb-0.5 capitalize">{j.category}</p>
+                  <p className="font-serif text-[1.1rem] font-semibold text-navy leading-snug">{j.title}</p>
+                  <p className="text-[14px] font-sans text-muted mt-0.5">{j.company}</p>
                   <div className="flex flex-wrap gap-1 mt-2">
-                    <span className="text-[10px] font-sans border border-border px-2 py-0.5 text-muted">{j.employmentType}</span>
+                    <span className={`text-[12px] font-sans font-semibold uppercase tracking-[0.12em] px-2 py-0.5 border ${
+                      j.active === false ? "text-muted border-border" : "text-green-700 border-green-200 bg-green-50"}`}>
+                      {j.active === false ? "Closed" : "Open"}
+                    </span>
+                    <span className="text-[12px] font-sans border border-border px-2 py-0.5 text-muted">{j.employmentType}</span>
                     {j.openings && (
-                      <span className="text-[10px] font-sans border border-border px-2 py-0.5 text-muted flex items-center gap-1">
+                      <span className="text-[12px] font-sans border border-border px-2 py-0.5 text-muted flex items-center gap-1">
                         <Users className="w-3 h-3" />{j.openings} opening{j.openings > 1 ? "s" : ""}
                       </span>
                     )}
@@ -196,59 +206,58 @@ export default function EmployerDashboard() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <p className="flex items-center gap-1.5 text-[12px] font-sans text-muted">
+                  <p className="flex items-center gap-1.5 text-[14px] font-sans text-muted">
                     <MapPin className="w-3.5 h-3.5 flex-shrink-0" />{j.location}
                   </p>
                 </div>
 
                 <div className="md:col-span-2 space-y-1">
-                  <p className="flex items-center gap-1.5 text-[12px] font-sans text-muted">
+                  <p className="flex items-center gap-1.5 text-[14px] font-sans text-muted">
                     <Briefcase className="w-3.5 h-3.5 flex-shrink-0" />{formatExperience(j.experienceMin, j.experienceMax)}
                   </p>
-                  <p className="text-[12px] font-sans text-muted">{formatSalary(j.salaryMin, j.salaryMax)}</p>
+                  <p className="text-[14px] font-sans text-muted">{formatSalary(j.salaryMin, j.salaryMax)}</p>
                 </div>
 
                 <div className="md:col-span-3 flex items-center justify-end gap-2 flex-wrap">
                   <button type="button" onClick={() => openApplicants(j)}
-                    className="flex items-center gap-1.5 text-[11px] font-sans font-semibold uppercase tracking-[0.14em] text-brass border border-brass/40 px-3 py-2 hover:bg-brass/10 transition-colors">
-                    <Users className="w-3 h-3" /> Applicants
+                    className="flex items-center gap-1.5 text-[13px] font-sans font-semibold uppercase tracking-[0.14em] text-brass border border-brass/40 px-3 py-2 hover:bg-brass/10 transition-colors">
+                    <Users className="w-3 h-3" /> Applicants{j.applicantCount != null ? ` (${j.applicantCount})` : ""}
                   </button>
-                  <button type="button" onClick={() => { setEditing(j); setShowForm(true); }}
-                    className="flex items-center gap-1.5 text-[11px] font-sans font-semibold uppercase tracking-[0.14em] text-navy border border-border px-3 py-2 hover:bg-ivory transition-colors">
-                    <Pencil className="w-3 h-3" />
-                  </button>
-                  <button type="button" onClick={() => setDeleting(j.id)}
-                    className="flex items-center gap-1.5 text-[11px] font-sans font-semibold uppercase tracking-[0.14em] text-red-500 border border-red-200 px-3 py-2 hover:bg-red-50 transition-colors">
-                    <Trash2 className="w-3 h-3" />
-                  </button>
+                  {j.active === false ? (
+                    <button type="button" onClick={() => handleReopen(j.id)} disabled={!verified}
+                      className="flex items-center gap-1.5 text-[13px] font-sans font-semibold uppercase tracking-[0.14em] text-green-700 border border-green-300 px-3 py-2 hover:bg-green-50 transition-colors disabled:opacity-50">
+                      <RotateCcw className="w-3 h-3" /> Reopen
+                    </button>
+                  ) : (
+                    <>
+                      <button type="button" onClick={() => { setEditing(j); setShowForm(true); }} disabled={!verified}
+                        className="flex items-center gap-1.5 text-[13px] font-sans font-semibold uppercase tracking-[0.14em] text-navy border border-border px-3 py-2 hover:bg-ivory transition-colors disabled:opacity-50">
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                      <button type="button" onClick={() => setDeleting(j.id)}
+                        className="flex items-center gap-1.5 text-[13px] font-sans font-semibold uppercase tracking-[0.14em] text-red-500 border border-red-200 px-3 py-2 hover:bg-red-50 transition-colors">
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         ) : (
           <div className="py-20 text-center bg-surface border border-border">
-            <p className="text-[13px] font-sans text-muted">
-              {jobs.length === 0 ? "No jobs posted yet. Use the Post New Job button above." : "No jobs match your search."}
+            <p className="text-[15px] font-sans text-muted">
+              {jobs.length === 0 ? "No jobs posted yet. Use the Post New Job button above." : view === "closed" ? "No closed jobs." : "No jobs match your search."}
             </p>
           </div>
         )}
       </div>
 
-      {/* Applicants panel */}
-      {applicantsJob && (
-        <ApplicantsPanel
-          job={applicantsJob}
-          applicants={applicants}
-          loading={appsLoading}
-          onClose={() => { setApplicantsJob(null); setApplicants([]); }}
-          onStatusChange={updateAppStatus}
-        />
-      )}
-
       {/* Job form modal */}
       {showForm && (
         <JobFormModal
           initial={editing}
+          companyName={company?.name ?? null}
           onClose={() => { setShowForm(false); setEditing(null); }}
           onSaved={() => { setShowForm(false); setEditing(null); fetchJobs(); }}
         />
@@ -258,15 +267,15 @@ export default function EmployerDashboard() {
       {deleting && (
         <div className="fixed inset-0 bg-navy/50 z-50 flex items-center justify-center p-4 backdrop-blur-[2px]">
           <div className="bg-surface w-full max-w-sm p-8 border border-border">
-            <h3 className="font-serif text-xl font-bold text-navy mb-2">Remove this job?</h3>
-            <p className="text-[13px] font-sans text-muted mb-6">This will deactivate the listing.</p>
+            <h3 className="font-serif text-2xl font-bold text-navy mb-2">Close this job?</h3>
+            <p className="text-[15px] font-sans text-muted mb-6">Candidates will no longer see it. You can reopen it later from the Closed tab.</p>
             <div className="flex gap-3">
               <button type="button" onClick={() => handleDeactivate(deleting)}
-                className="flex-1 py-2.5 text-[11px] font-sans font-semibold uppercase tracking-[0.16em] text-surface bg-red-600 hover:bg-red-700 transition-colors">
-                Remove
+                className="flex-1 py-2.5 text-[13px] font-sans font-semibold uppercase tracking-[0.16em] text-surface bg-red-600 hover:bg-red-700 transition-colors">
+                Close listing
               </button>
               <button type="button" onClick={() => setDeleting(null)}
-                className="flex-1 py-2.5 text-[11px] font-sans font-semibold uppercase tracking-[0.16em] text-charcoal border border-border hover:bg-ivory transition-colors">
+                className="flex-1 py-2.5 text-[13px] font-sans font-semibold uppercase tracking-[0.16em] text-charcoal border border-border hover:bg-ivory transition-colors">
                 Cancel
               </button>
             </div>
@@ -277,122 +286,14 @@ export default function EmployerDashboard() {
   );
 }
 
-/* ── Applicants panel ───────────────────────────────────────── */
-function ApplicantsPanel({ job, applicants, loading, onClose, onStatusChange }: {
-  job: Job; applicants: Applicant[]; loading: boolean;
-  onClose: () => void;
-  onStatusChange: (id: string | number, status: "SHORTLISTED" | "REJECTED") => void;
-}) {
-  return (
-    <>
-      <div className="fixed inset-0 bg-navy/50 z-40 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="fixed right-0 top-0 bottom-0 w-full max-w-[540px] bg-surface z-50 overflow-y-auto"
-        style={{ boxShadow: "-8px 0 40px rgba(0,0,0,0.2)" }}>
-        <div className="sticky top-0 bg-navy z-10 border-b border-navy-border">
-          <div className="h-[2px] bg-brass" />
-          <div className="px-8 py-5 flex items-start justify-between">
-            <div>
-              <p className="text-[9px] font-sans font-semibold uppercase tracking-[0.3em] text-brass mb-0.5">Applicants</p>
-              <h2 className="font-serif text-lg font-bold text-surface">{job.title}</h2>
-              <p className="text-[11px] font-sans text-[#8A9DB5] mt-0.5">{job.company}</p>
-            </div>
-            <button type="button" onClick={onClose} className="text-[#8A9DB5] hover:text-surface transition-colors mt-1">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-
-        <div className="px-8 py-6">
-          {loading ? (
-            <p className="text-[13px] font-sans text-muted text-center py-12">Loading applicants…</p>
-          ) : applicants.length === 0 ? (
-            <div className="text-center py-16">
-              <Users className="w-8 h-8 text-muted mx-auto mb-3" />
-              <p className="text-[13px] font-sans text-muted">No applications yet for this role.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <p className="text-[11px] font-sans text-muted">{applicants.length} {applicants.length === 1 ? "applicant" : "applicants"}</p>
-              {applicants.map((a) => {
-                const cfg = APP_STATUS[a.status];
-                return (
-                  <div key={a.id} className="border border-border bg-ivory p-5">
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-navy rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-[10px] font-sans font-bold text-brass">
-                            {a.fullName.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase()}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="font-serif text-[0.95rem] font-bold text-navy">{a.fullName}</p>
-                          {a.headline && <p className="text-[11px] font-sans text-muted mt-0.5 line-clamp-1">{a.headline}</p>}
-                        </div>
-                      </div>
-                      <span className={`flex items-center gap-1.5 text-[10px] font-sans font-semibold px-2 py-1 border flex-shrink-0 ${cfg.color}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-                        {cfg.label}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] font-sans text-muted mb-3">
-                      {a.email && (
-                        <a href={`mailto:${a.email}`} className="flex items-center gap-1.5 hover:text-navy transition-colors">
-                          <Mail className="w-3 h-3" />{a.email}
-                        </a>
-                      )}
-                      {a.phone && <span className="flex items-center gap-1.5"><Phone className="w-3 h-3" />{a.phone}</span>}
-                      {a.city && <span className="flex items-center gap-1.5"><MapPin className="w-3 h-3" />{a.city}</span>}
-                      {a.totalExp && <span className="flex items-center gap-1.5"><Briefcase className="w-3 h-3" />{a.totalExp}</span>}
-                    </div>
-
-                    {(a.skills ?? []).length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-3">
-                        {(a.skills ?? []).slice(0, 4).map((s) => (
-                          <span key={s} className="text-[9px] font-sans text-muted border border-border px-2 py-0.5">{s}</span>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-between pt-3 border-t border-border">
-                      <span className="text-[10px] font-sans text-muted">Applied {formatRelativeDate(a.appliedAt)}</span>
-                      {a.status === "APPLIED" ? (
-                        <div className="flex gap-2">
-                          <button type="button" onClick={() => onStatusChange(a.id, "SHORTLISTED")}
-                            className="text-[10px] font-sans font-semibold uppercase tracking-[0.14em] text-green-700 border border-green-300 px-3 py-1.5 hover:bg-green-50 transition-colors">
-                            Shortlist
-                          </button>
-                          <button type="button" onClick={() => onStatusChange(a.id, "REJECTED")}
-                            className="text-[10px] font-sans font-semibold uppercase tracking-[0.14em] text-red-600 border border-red-200 px-3 py-1.5 hover:bg-red-50 transition-colors">
-                            Reject
-                          </button>
-                        </div>
-                      ) : (
-                        <button type="button"
-                          onClick={() => onStatusChange(a.id, a.status === "SHORTLISTED" ? "REJECTED" : "SHORTLISTED")}
-                          className="text-[10px] font-sans text-muted hover:text-navy transition-colors flex items-center gap-1">
-                          Change <ChevronRight className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-    </>
-  );
-}
 
 /* ── Job form modal ─────────────────────────────────────────── */
-function JobFormModal({ initial, onClose, onSaved }: {
-  initial: Job | null; onClose: () => void; onSaved: () => void;
+function JobFormModal({ initial, companyName, onClose, onSaved }: {
+  initial: Job | null; companyName: string | null; onClose: () => void; onSaved: () => void;
 }) {
   const [form, setForm] = useState({
     title:          initial?.title          ?? "",
-    company:        initial?.company        ?? "",
+    company:        companyName ?? initial?.company ?? "",
     location:       initial?.location       ?? "",
     category:       initial?.category       ?? "",
     employmentType: initial?.employmentType ?? "Full-time",
@@ -406,12 +307,14 @@ function JobFormModal({ initial, onClose, onSaved }: {
   });
   const [saving,  setSaving]  = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error,   setError]   = useState<string | null>(null);
 
   function set(key: string, val: unknown) { setForm((p) => ({ ...p, [key]: val })); }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
+    setError(null);
     const payload = {
       title: form.title, company: form.company, location: form.location,
       category: form.category, employmentType: form.employmentType,
@@ -429,7 +332,10 @@ function JobFormModal({ initial, onClose, onSaved }: {
       }
       setSuccess(true);
       setTimeout(onSaved, 900);
-    } catch { setSaving(false); }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save the job.");
+      setSaving(false);
+    }
   }
 
   return (
@@ -441,12 +347,12 @@ function JobFormModal({ initial, onClose, onSaved }: {
           <div className="h-[2px] bg-brass" />
           <div className="px-8 py-5 flex items-center justify-between border-b border-navy-border">
             <div>
-              <p className="text-[9px] font-sans font-semibold uppercase tracking-[0.3em] text-brass mb-0.5">Employer</p>
-              <h2 className="font-serif text-lg font-bold text-surface">
+              <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.3em] text-brass mb-0.5">Employer</p>
+              <h2 className="font-serif text-xl font-bold text-surface">
                 {initial ? "Edit Job Listing" : "Post New Opportunity"}
               </h2>
             </div>
-            <button type="button" onClick={onClose} className="text-[#8A9DB5] hover:text-surface transition-colors">
+            <button type="button" onClick={onClose} className="text-navy-text hover:text-surface transition-colors">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -455,14 +361,22 @@ function JobFormModal({ initial, onClose, onSaved }: {
         {success ? (
           <div className="px-8 py-16 flex flex-col items-center text-center">
             <CheckCircle2 className="w-12 h-12 text-green-500 mb-4" />
-            <p className="font-serif text-xl font-bold text-navy mb-1">{initial ? "Job Updated!" : "Job Posted!"}</p>
-            <p className="text-[13px] font-sans text-muted">Your listing is now live on TalentGrid.</p>
+            <p className="font-serif text-2xl font-bold text-navy mb-1">{initial ? "Job Updated!" : "Job Posted!"}</p>
+            <p className="text-[15px] font-sans text-muted">Your listing is now live on TalentGrid.</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="px-8 py-6 space-y-5">
+            {error && (
+              <p className="flex items-center gap-2 text-[14px] font-sans text-red-600 bg-red-50 border border-red-200 px-4 py-3">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />{error}
+              </p>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <F label="Job Title *"><input required value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="e.g. Senior Project Manager" className={inp} /></F>
-              <F label="Company *"><input required value={form.company} onChange={(e) => set("company", e.target.value)} placeholder="e.g. Infosys" className={inp} /></F>
+              <F label={companyName ? "Company (from profile)" : "Company *"}>
+                <input required readOnly={!!companyName} value={form.company} onChange={(e) => set("company", e.target.value)} placeholder="e.g. Infosys"
+                  className={`${inp} ${companyName ? "bg-ivory text-muted cursor-not-allowed" : ""}`} />
+              </F>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <F label="Location *">
@@ -496,11 +410,11 @@ function JobFormModal({ initial, onClose, onSaved }: {
             <F label="Job Description"><textarea rows={4} value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="Describe the role…" className={`${inp} resize-none`} /></F>
             <div className="flex gap-3 pt-2">
               <button type="submit" disabled={saving}
-                className="flex-1 py-3 text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-navy bg-brass hover:bg-brass/90 disabled:opacity-60 transition-colors">
+                className="flex-1 py-3 text-[13px] font-sans font-semibold uppercase tracking-[0.18em] text-navy bg-brass hover:bg-brass/90 disabled:opacity-60 transition-colors">
                 {saving ? "Saving…" : initial ? "Save Changes" : "Post Opportunity"}
               </button>
               <button type="button" onClick={onClose}
-                className="px-6 py-3 text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-muted border border-border hover:bg-ivory transition-colors">
+                className="px-6 py-3 text-[13px] font-sans font-semibold uppercase tracking-[0.18em] text-muted border border-border hover:bg-ivory transition-colors">
                 Cancel
               </button>
             </div>
@@ -511,12 +425,12 @@ function JobFormModal({ initial, onClose, onSaved }: {
   );
 }
 
-const inp = "w-full px-4 py-2.5 text-[13px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal placeholder-muted";
+const inp = "w-full px-4 py-2.5 text-[15px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal placeholder-muted";
 
 function F({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[9px] font-sans font-semibold uppercase tracking-[0.2em] text-muted mb-1.5">{label}</label>
+      <label className="block text-[11px] font-sans font-semibold uppercase tracking-[0.2em] text-muted mb-1.5">{label}</label>
       {children}
     </div>
   );

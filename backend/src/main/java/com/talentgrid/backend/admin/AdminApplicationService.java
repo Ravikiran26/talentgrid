@@ -4,9 +4,11 @@ import com.talentgrid.backend.admin.dto.AdminApplicantResponse;
 import com.talentgrid.backend.application.Application;
 import com.talentgrid.backend.application.ApplicationRepository;
 import com.talentgrid.backend.application.ApplicationStatus;
+import com.talentgrid.backend.application.ApplicationTracker;
 import com.talentgrid.backend.exception.BadRequestException;
 import com.talentgrid.backend.exception.NotFoundException;
 import com.talentgrid.backend.job.JobService;
+import com.talentgrid.backend.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,10 +23,12 @@ import java.util.Set;
 public class AdminApplicationService {
 
     private static final Set<ApplicationStatus> ADMIN_ALLOWED_STATUSES =
-            EnumSet.of(ApplicationStatus.SHORTLISTED, ApplicationStatus.REJECTED);
+            EnumSet.of(ApplicationStatus.UNDER_REVIEW, ApplicationStatus.SHORTLISTED, ApplicationStatus.REJECTED);
 
     private final ApplicationRepository applicationRepository;
     private final JobService jobService;
+    private final NotificationService notificationService;
+    private final com.talentgrid.backend.application.ApplicationTracker tracker;
 
     @Transactional(readOnly = true)
     public Page<AdminApplicantResponse> listForJob(Long jobId, Pageable pageable) {
@@ -40,7 +44,11 @@ public class AdminApplicationService {
         }
         Application app = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new NotFoundException("Application not found: " + applicationId));
-        app.setStatus(status);
+        if (app.getStatus() != status) {
+            app.setStatus(status);
+            tracker.record(app, status, ApplicationTracker.defaultNote(status));
+            notificationService.applicationStatusChanged(app, status);
+        }
         return AdminApplicantResponse.fromEntity(app);
     }
 }

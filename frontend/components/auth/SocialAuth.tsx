@@ -10,7 +10,7 @@ export default function SocialAuth({ mode }: { mode: "register" | "login" }) {
       {/* Divider */}
       <div className="flex items-center gap-3 mb-5">
         <div className="flex-1 h-px bg-border" />
-        <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-muted">
+        <span className="text-[12px] font-sans font-semibold uppercase tracking-[0.18em] text-muted">
           or {label} with
         </span>
         <div className="flex-1 h-px bg-border" />
@@ -23,7 +23,7 @@ export default function SocialAuth({ mode }: { mode: "register" | "login" }) {
           className="flex items-center gap-3 w-full px-4 py-3 border border-border bg-surface hover:bg-ivory hover:border-navy/20 transition-colors duration-150 group"
         >
           <GoogleIcon />
-          <span className="text-[13px] font-sans text-charcoal group-hover:text-navy transition-colors">
+          <span className="text-[15px] font-sans text-charcoal group-hover:text-navy transition-colors">
             {label} with Google
           </span>
         </a>
@@ -34,15 +34,11 @@ export default function SocialAuth({ mode }: { mode: "register" | "login" }) {
           className="flex items-center gap-3 w-full px-4 py-3 border border-border bg-surface hover:bg-ivory hover:border-navy/20 transition-colors duration-150 group"
         >
           <LinkedInIcon />
-          <span className="text-[13px] font-sans text-charcoal group-hover:text-navy transition-colors">
+          <span className="text-[15px] font-sans text-charcoal group-hover:text-navy transition-colors">
             {label} with LinkedIn
           </span>
         </a>
       </div>
-
-      <p className="mt-4 text-[10px] font-sans text-muted text-center">
-        OAuth sign-in is coming soon. Use email & password above.
-      </p>
     </div>
   );
 }

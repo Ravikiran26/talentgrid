@@ -20,6 +20,7 @@ function ResetPasswordForm() {
   const [success,   setSuccess]   = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!token) setError("Invalid or missing reset link. Please request a new one.");
   }, [token]);
 
@@ -45,7 +46,7 @@ function ResetPasswordForm() {
   }
 
   const inp = (err?: boolean) =>
-    `w-full px-4 py-3 text-[13px] font-sans text-charcoal placeholder-[#C5BFB6] bg-transparent border focus:outline-none transition-colors duration-150 ${
+    `w-full px-4 py-3 text-[15px] font-sans text-charcoal placeholder-muted-light bg-transparent border focus:outline-none transition-colors duration-150 ${
       err ? "border-red-400" : "border-border focus:border-navy"
     }`;
 
@@ -57,8 +58,8 @@ function ResetPasswordForm() {
 
         <div className="lg:hidden flex items-center px-6 py-5 border-b border-border">
           <Link href="/">
-            <div className="font-serif text-lg font-bold text-navy leading-none">TalentGrid</div>
-            <div className="text-[9px] font-sans font-semibold uppercase tracking-[0.22em] text-muted mt-0.5">Executive Careers</div>
+            <div className="font-serif text-xl font-bold text-navy leading-none">TalentGrid</div>
+            <div className="text-[11px] font-sans font-semibold uppercase tracking-[0.22em] text-muted mt-0.5">Executive Careers</div>
           </Link>
         </div>
 
@@ -66,29 +67,29 @@ function ResetPasswordForm() {
 
           <div className="hidden lg:block">
             <Link href="/">
-              <div className="font-serif text-[1.3rem] font-bold text-navy leading-none">TalentGrid</div>
-              <div className="text-[9px] font-sans font-semibold uppercase tracking-[0.26em] text-muted mt-1">Executive Careers · India</div>
+              <div className="font-serif text-[1.43rem] font-bold text-navy leading-none">TalentGrid</div>
+              <div className="text-[11px] font-sans font-semibold uppercase tracking-[0.26em] text-muted mt-1">Executive Careers · India</div>
             </Link>
           </div>
 
           <div className="w-full max-w-[360px] mx-auto lg:mx-0 py-10 lg:py-0">
 
             <Link href="/login"
-              className="inline-flex items-center gap-2 text-[11px] font-sans text-muted hover:text-navy transition-colors mb-8">
+              className="inline-flex items-center gap-2 text-[13px] font-sans text-muted hover:text-navy transition-colors mb-8">
               <ArrowLeft className="w-3.5 h-3.5" /> Back to Sign In
             </Link>
 
             {success ? (
               <div>
                 <CheckCircle2 className="w-9 h-9 text-green-500 mb-5" strokeWidth={1.5} />
-                <h1 className="font-serif text-[1.8rem] font-bold text-navy leading-tight mb-3">
+                <h1 className="font-serif text-[1.98rem] font-bold text-navy leading-tight mb-3">
                   Password Reset!
                 </h1>
-                <p className="text-[13px] font-sans text-muted leading-relaxed mb-8">
+                <p className="text-[15px] font-sans text-muted leading-relaxed mb-8">
                   Your password has been updated. Redirecting you to sign in…
                 </p>
                 <Link href="/login"
-                  className="inline-flex items-center gap-2 text-[11px] font-sans font-semibold uppercase tracking-[0.2em] text-surface bg-navy hover:bg-navy-mid px-7 py-3.5 transition-colors duration-150">
+                  className="inline-flex items-center gap-2 text-[13px] font-sans font-semibold uppercase tracking-[0.2em] text-surface bg-navy hover:bg-navy-mid px-7 py-3.5 transition-colors duration-150">
                   Sign In Now →
                 </Link>
               </div>
@@ -96,10 +97,10 @@ function ResetPasswordForm() {
               <div>
                 <div className="mb-8">
                   <div className="w-6 h-[2px] bg-brass mb-5" />
-                  <h1 className="font-serif text-[1.8rem] font-bold text-navy leading-tight mb-2">
+                  <h1 className="font-serif text-[1.98rem] font-bold text-navy leading-tight mb-2">
                     Set new password
                   </h1>
-                  <p className="text-[13px] font-sans text-muted leading-relaxed">
+                  <p className="text-[15px] font-sans text-muted leading-relaxed">
                     Choose a strong password for your TalentGrid account.
                   </p>
                 </div>
@@ -107,7 +108,7 @@ function ResetPasswordForm() {
                 <form onSubmit={handleSubmit} noValidate className="space-y-5">
 
                   <div>
-                    <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.2em] text-muted mb-2">
+                    <label className="block text-[12px] font-sans font-semibold uppercase tracking-[0.2em] text-muted mb-2">
                       New Password
                     </label>
                     <div className="relative">
@@ -126,7 +127,7 @@ function ResetPasswordForm() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.2em] text-muted mb-2">
+                    <label className="block text-[12px] font-sans font-semibold uppercase tracking-[0.2em] text-muted mb-2">
                       Confirm Password
                     </label>
                     <div className="relative">
@@ -145,19 +146,19 @@ function ResetPasswordForm() {
                   </div>
 
                   {error && (
-                    <p className="flex items-start gap-2 text-[12px] font-sans text-red-600 bg-red-50 border border-red-200 px-4 py-3">
+                    <p className="flex items-start gap-2 text-[14px] font-sans text-red-600 bg-red-50 border border-red-200 px-4 py-3">
                       <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />{error}
                     </p>
                   )}
 
                   <div className="pt-2">
                     <button type="submit" disabled={loading || !token}
-                      className="w-full py-3.5 text-[11px] font-sans font-semibold uppercase tracking-[0.22em] text-surface bg-navy hover:bg-navy-mid disabled:opacity-60 transition-colors duration-150 focus:outline-none">
+                      className="w-full py-3.5 text-[13px] font-sans font-semibold uppercase tracking-[0.22em] text-surface bg-navy hover:bg-navy-mid disabled:opacity-60 transition-colors duration-150 focus:outline-none">
                       {loading ? "Resetting…" : "Reset Password →"}
                     </button>
                   </div>
 
-                  <p className="text-center text-[12px] font-sans text-muted">
+                  <p className="text-center text-[14px] font-sans text-muted">
                     Link expired?{" "}
                     <Link href="/forgot-password" className="text-navy underline underline-offset-4 hover:text-brass transition-colors">
                       Request a new one
@@ -169,7 +170,7 @@ function ResetPasswordForm() {
           </div>
 
           <div className="hidden lg:block">
-            <p className="text-[11px] font-sans text-muted/50">&copy; {new Date().getFullYear()} TalentGrid</p>
+            <p className="text-[13px] font-sans text-muted/50">&copy; {new Date().getFullYear()} TalentGrid</p>
           </div>
         </div>
       </div>
@@ -177,29 +178,29 @@ function ResetPasswordForm() {
       {/* Right: brand panel */}
       <div className="hidden lg:flex lg:w-[46%] xl:w-[48%] bg-navy flex-col justify-between p-14 xl:p-16 relative overflow-hidden">
         <div className="absolute inset-0 opacity-[0.03]" style={{
-          backgroundImage: "repeating-linear-gradient(90deg, #B08D57 0px, #B08D57 1px, transparent 1px, transparent 80px)",
+          backgroundImage: "repeating-linear-gradient(90deg, var(--color-brass) 0px, var(--color-brass) 1px, transparent 1px, transparent 80px)",
         }} />
         <div className="absolute top-8 left-8 w-6 h-6 border-t border-l border-brass opacity-25" />
         <div className="absolute top-8 right-8 w-6 h-6 border-t border-r border-brass opacity-25" />
         <div className="absolute bottom-8 left-8 w-6 h-6 border-b border-l border-brass opacity-25" />
         <div className="absolute bottom-8 right-8 w-6 h-6 border-b border-r border-brass opacity-25" />
         <div className="relative">
-          <p className="text-[9px] font-sans font-semibold uppercase tracking-[0.3em] text-brass">Account Security</p>
+          <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.3em] text-brass">Account Security</p>
         </div>
         <div className="relative">
           <div className="w-12 h-[1px] bg-brass/50 mb-10" />
-          <h2 className="font-serif text-[3rem] xl:text-[3.4rem] font-bold text-surface leading-[1.05] tracking-tight">
+          <h2 className="font-serif text-[3.15rem] xl:text-[3.57rem] font-bold text-surface leading-[1.05] tracking-tight">
             Almost there,<br />
             <span className="text-brass/80">you&apos;re nearly in.</span>
           </h2>
-          <p className="mt-8 text-[13px] font-sans text-[#7A95B0] leading-relaxed max-w-[300px]">
+          <p className="mt-8 text-[15px] font-sans text-navy-text leading-relaxed max-w-[300px]">
             Set a strong password and get back to your profile and applications in seconds.
           </p>
         </div>
         <div className="relative">
-          <p className="text-[12px] font-sans text-[#4A6A8A]">
+          <p className="text-[14px] font-sans text-navy-text-dim">
             Remember your password?{" "}
-            <Link href="/login" className="text-[#7A95B0] hover:text-brass underline-offset-4 hover:underline transition-colors">
+            <Link href="/login" className="text-navy-text hover:text-brass underline-offset-4 hover:underline transition-colors">
               Sign in instead →
             </Link>
           </p>
@@ -211,7 +212,7 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-surface flex items-center justify-center"><p className="text-[13px] font-sans text-muted">Loading…</p></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-surface flex items-center justify-center"><p className="text-[15px] font-sans text-muted">Loading…</p></div>}>
       <ResetPasswordForm />
     </Suspense>
   );

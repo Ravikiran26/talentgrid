@@ -19,6 +19,7 @@ public record ProfileResponse(
         CandidateStatus status,
         boolean hasResume,
         String resumeFileName,
+        boolean hasPhoto,
         boolean canApply
 ) {
     public static ProfileResponse fromEntity(User u) {
@@ -38,6 +39,7 @@ public record ProfileResponse(
                 u.getStatus(),
                 hasResume,
                 hasResume ? resume : null,
+                hasText(u.getPhotoFile()),
                 canApply(u)
         );
     }

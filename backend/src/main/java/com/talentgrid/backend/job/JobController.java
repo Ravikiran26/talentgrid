@@ -27,8 +27,23 @@ public class JobController {
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String location,
+            @RequestParam(required = false) String employmentType,
+            @RequestParam(required = false) Integer experienceMin,
+            @RequestParam(required = false) Integer experienceMax,
+            @RequestParam(required = false) Integer salaryMin,
             @PageableDefault(size = 20, sort = "postedAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return PageResponses.ok(jobService.search(q, category, location, pageable));
+        return PageResponses.ok(jobService.search(q, category, location,
+                employmentType, experienceMin, experienceMax, salaryMin, pageable));
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<com.talentgrid.backend.job.dto.JobStatsResponse> stats() {
+        return ResponseEntity.ok(jobService.stats());
+    }
+
+    @GetMapping("/facets")
+    public ResponseEntity<com.talentgrid.backend.job.dto.JobFacetsResponse> facets() {
+        return ResponseEntity.ok(jobService.facets());
     }
 
     @GetMapping("/{id}")
@@ -46,6 +61,11 @@ public class JobController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateJobRequest req) {
         return ResponseEntity.ok(jobService.update(id, req));
+    }
+
+    @PatchMapping("/{id}/reactivate")
+    public ResponseEntity<JobResponse> reactivate(@PathVariable Long id) {
+        return ResponseEntity.ok(jobService.reactivate(id));
     }
 
     @PatchMapping("/{id}/deactivate")

@@ -25,6 +25,10 @@ public class ProfileService {
 
     private static final Set<String> ALLOWED_EXTENSIONS =
             Set.of("pdf", "doc", "docx");
+    private static final Set<String> PHOTO_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp");
+    private static final Set<String> PHOTO_CONTENT_TYPES = Set.of("image/jpeg", "image/png", "image/webp");
+    private static final long PHOTO_MAX_BYTES = 2L * 1024 * 1024;
+
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             "application/pdf",
             "application/msword",
@@ -103,6 +107,66 @@ public class ProfileService {
         resumeStorage.delete(key);
         log.info("Resume deleted userId={} key={}", managed.getId(), key);
         return ProfileResponse.fromEntity(managed);
+    }
+
+    @Transactional
+    public ProfileResponse uploadPhoto(User user, MultipartFile file) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new BadRequestException("Photo file is required");
+        }
+        if (file.getSize() > PHOTO_MAX_BYTES) {
+            throw new BadRequestException("Photo must be 2 MB or smaller");
+        }
+        String ext = extractExtension(file.getOriginalFilename());
+        String contentType = file.getContentType();
+        if (!PHOTO_EXTENSIONS.contains(ext)
+                || (contentType != null && !PHOTO_CONTENT_TYPES.contains(contentType))) {
+            throw new BadRequestException("Allowed photo formats: JPG, PNG, WEBP");
+        }
+
+        User managed = loadManaged(user);
+        String previous = managed.getPhotoFile();
+        String key;
+        try (var in = file.getInputStream()) {
+            key = resumeStorage.store(managed.getId(), ext, in);
+        }
+        managed.setPhotoFile(key);
+        deleteQuietly(previous, managed.getId());
+        log.info("Photo uploaded userId={} key={}", managed.getId(), key);
+        return ProfileResponse.fromEntity(managed);
+    }
+
+    @Transactional(readOnly = true)
+    public ResumeService.ResumeDownload loadPhoto(User user) {
+        String key = loadManaged(user).getPhotoFile();
+        if (key == null || key.isBlank()) {
+            throw new NotFoundException("No photo on file");
+        }
+        String ext = extractExtension(key);
+        String type = switch (ext) {
+            case "png"  -> "image/png";
+            case "webp" -> "image/webp";
+            default     -> "image/jpeg";
+        };
+        return new ResumeService.ResumeDownload(resumeStorage.resolve(key), type, key);
+    }
+
+    @Transactional
+    public ProfileResponse deletePhoto(User user) {
+        User managed = loadManaged(user);
+        String key = managed.getPhotoFile();
+        managed.setPhotoFile(null);
+        deleteQuietly(key, managed.getId());
+        return ProfileResponse.fromEntity(managed);
+    }
+
+    private void deleteQuietly(String key, Long userId) {
+        if (key == null || key.isBlank()) return;
+        try {
+            resumeStorage.delete(key);
+        } catch (IOException ex) {
+            log.warn("Failed to delete stored file {} for userId={}: {}", key, userId, ex.getMessage());
+        }
     }
 
     @Transactional(readOnly = true)

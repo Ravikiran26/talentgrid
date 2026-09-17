@@ -28,8 +28,15 @@ public class AdminCandidateController {
 
     @GetMapping
     public ResponseEntity<List<CandidateSummaryResponse>> list(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) com.talentgrid.backend.user.CandidateStatus status,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return PageResponses.ok(adminCandidateService.listCandidates(pageable));
+        return PageResponses.ok(adminCandidateService.listCandidates(q, status, pageable));
+    }
+
+    @GetMapping("/counts")
+    public ResponseEntity<AdminCandidateService.StatusCounts> counts() {
+        return ResponseEntity.ok(adminCandidateService.counts());
     }
 
     @GetMapping("/{id}")
@@ -42,6 +49,15 @@ public class AdminCandidateController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateCandidateStatusRequest req) {
         return ResponseEntity.ok(adminCandidateService.updateStatus(id, req.status()));
+    }
+
+    @GetMapping("/{id}/photo")
+    public ResponseEntity<Resource> photo(@PathVariable Long id) {
+        ResumeService.ResumeDownload d = adminCandidateService.loadPhotoFor(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(d.contentType()))
+                .header(HttpHeaders.CACHE_CONTROL, "private, max-age=300")
+                .body(new FileSystemResource(d.path()));
     }
 
     @GetMapping("/{id}/resume")
