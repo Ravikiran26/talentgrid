@@ -9,12 +9,14 @@ export default function HeroSection() {
     <section className="relative bg-ivory overflow-hidden">
 
       {/* Right-hand photograph. Near-vertical split with a slight angled edge. */}
-      <div aria-hidden className="hidden lg:block absolute inset-y-0 right-0 w-[41%]"
+      <div aria-hidden className="hidden lg:block absolute top-0 bottom-10 right-0 w-[41%] overflow-hidden"
         style={{ clipPath: "polygon(5% 0, 100% 0, 100% 100%, 0 100%)" }}>
+        {/* The photograph carries its own lettering on the right-hand wall. Rendering it at
+            150% width anchored left keeps that lettering out of frame at every panel size. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/hero.jpg" alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ objectPosition: "34% center" }} />
+          className="absolute inset-y-0 left-0 w-[150%] max-w-none h-full object-cover"
+          style={{ objectPosition: "left center" }} />
 
         {/* Keeps the skyline and desk readable while deepening behind the quote. */}
         <div className="absolute inset-0"
@@ -47,7 +49,7 @@ export default function HeroSection() {
       </div>
 
       <div className="relative max-w-[1400px] mx-auto px-6 lg:px-10">
-        <div className="pt-12 lg:pt-14 pb-10 lg:pb-12">
+        <div className="pt-12 lg:pt-14 pb-10 lg:pb-20">
 
           <div className="lg:max-w-[52%]">
             <div className="flex items-center gap-4 mb-7">
@@ -71,10 +73,10 @@ export default function HeroSection() {
           {/* Stacked visual for tablet and phone, where the side panel is hidden */}
           <div className="lg:hidden mt-10 relative h-[200px] border border-border overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/hero.jpg" alt="" className="absolute inset-0 w-full h-full object-cover"
-              style={{ objectPosition: "38% center" }} />
+            <img src="/hero.jpg" alt="" className="absolute inset-y-0 left-0 w-[150%] max-w-none h-full object-cover"
+              style={{ objectPosition: "left center" }} />
             <div className="absolute inset-0"
-              style={{ background: "linear-gradient(100deg, rgba(7,24,39,0.18) 0%, rgba(7,24,39,0.52) 42%, rgba(7,24,39,0.82) 100%)" }} />
+              style={{ background: "linear-gradient(100deg, rgba(7,24,39,0.66) 0%, rgba(7,24,39,0.74) 50%, rgba(7,24,39,0.86) 100%)" }} />
             <div className="absolute inset-0 flex flex-col justify-center px-7">
               <div className="w-8 h-[2px] bg-brass mb-4" />
               <p className="font-serif text-[1.15rem] italic text-surface leading-snug max-w-[250px]">

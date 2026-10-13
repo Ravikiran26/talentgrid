@@ -19,7 +19,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
       {/* Page header */}
       <div className="bg-navy border-b border-navy-border">
         <div className="h-[2px] bg-brass" />
-        <div className="max-w-screen-xl mx-auto px-6 lg:px-10 py-10">
+        <div className="max-w-screen-xl mx-auto px-6 lg:px-10 py-8">
           <p className="text-[12px] font-sans font-semibold uppercase tracking-[0.22em] text-brass mb-2">
             Open Roles
           </p>
@@ -33,7 +33,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
       </div>
 
       {/* Listing area */}
-      <div className="max-w-screen-xl mx-auto px-6 lg:px-10 py-10">
+      <div className="max-w-screen-xl mx-auto px-6 lg:px-10 pt-8 pb-16">
         <JobsList
           initialCategory={category}
           initialKeyword={keyword}

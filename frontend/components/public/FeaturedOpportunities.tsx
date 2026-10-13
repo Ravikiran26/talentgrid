@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MapPin, Briefcase } from "lucide-react";
+import { MapPin, Briefcase, Wallet } from "lucide-react";
 import { formatSalary, formatExperience } from "@/lib/utils";
 import type { Job } from "@/types";
 
@@ -36,7 +36,7 @@ export default function FeaturedOpportunities({ jobs }: Props) {
             <article key={job.id}
               className="group bg-surface border border-border p-7 flex flex-col hover:border-brass/60 transition-colors duration-200">
               <p className="text-[10.5px] font-sans font-semibold uppercase tracking-[0.22em] text-brass">
-                {job.category}
+                {job.category.replace(/-/g, " ")}
               </p>
               <h3 className="mt-3 font-serif text-[1.35rem] font-bold text-navy leading-snug">
                 <Link href={`/jobs/${job.id}`} className="hover:text-brass transition-colors">
@@ -45,7 +45,7 @@ export default function FeaturedOpportunities({ jobs }: Props) {
               </h3>
               <p className="mt-1.5 text-[14.5px] font-sans text-charcoal">{job.company}</p>
 
-              <div className="mt-5 space-y-2.5 text-[14px] font-sans text-muted">
+              <div className="mt-5 mb-6 space-y-2.5 text-[14px] font-sans text-muted">
                 <p className="flex items-center gap-2.5">
                   <MapPin className="w-4 h-4 flex-shrink-0 text-muted-light" />
                   {job.location} · {job.employmentType}
@@ -55,11 +55,14 @@ export default function FeaturedOpportunities({ jobs }: Props) {
                   {formatExperience(job.experienceMin, job.experienceMax)}
                 </p>
                 {job.salaryMin != null && (
-                  <p className="pl-[26px] font-medium text-navy">{formatSalary(job.salaryMin, job.salaryMax)}</p>
+                  <p className="flex items-center gap-2.5 font-medium text-navy">
+                    <Wallet className="w-4 h-4 flex-shrink-0 text-muted-light" />
+                    {formatSalary(job.salaryMin, job.salaryMax)}
+                  </p>
                 )}
               </div>
 
-              <div className="mt-auto pt-6 flex items-center justify-between border-t border-border mt-6">
+              <div className="mt-auto pt-5 flex items-center justify-between border-t border-border">
                 <span className="text-[12.5px] font-sans text-muted">{job.postedAt}</span>
                 <Link href={`/jobs/${job.id}`}
                   className="text-[11.5px] font-sans font-semibold uppercase tracking-[0.16em] text-navy group-hover:text-brass transition-colors">

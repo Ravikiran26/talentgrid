@@ -23,19 +23,18 @@ export default function EmployerTrust({ companies, isDemo }: Props) {
             ? "Trusted by leading organisations (sample data)"
             : "Organisations currently hiring on TalentGrid"}
         </p>
-        <div className="flex flex-wrap items-center gap-x-10 gap-y-6">
+        {/* Names set as quiet wordmarks between hairline dividers, rather than initial tiles. */}
+        <ul className="grid grid-cols-2 gap-y-3 sm:flex sm:flex-wrap sm:items-center sm:gap-y-4">
           {companies.slice(0, 7).map((co) => (
-            <Link key={co.id} href={`/jobs?q=${encodeURIComponent(co.name)}`}
-              className="group flex items-center gap-3" aria-label={`Roles at ${co.name}`}>
-              <span className="w-9 h-9 border border-border flex items-center justify-center text-[10.5px] font-sans font-bold tracking-wider text-muted group-hover:border-brass group-hover:text-brass transition-colors duration-150">
-                {co.initials}
-              </span>
-              <span className="font-sans text-[15px] font-medium text-navy/70 group-hover:text-navy transition-colors duration-150 whitespace-nowrap">
+            <li key={co.id}
+              className="sm:pr-7 sm:mr-7 sm:border-r border-border sm:last:border-r-0 sm:last:pr-0 sm:last:mr-0">
+              <Link href={`/jobs?q=${encodeURIComponent(co.name)}`} aria-label={`Roles at ${co.name}`}
+                className="font-serif text-[1.15rem] font-bold text-navy/55 hover:text-navy transition-colors duration-150 whitespace-nowrap">
                 {co.name}
-              </span>
-            </Link>
+              </Link>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </section>
   );

@@ -194,7 +194,7 @@ export default function JobsList({
       )}
 
       {/* Results header */}
-      <div className="flex items-center justify-between py-3 border-t border-b border-border mb-1">
+      <div className="flex items-center justify-between pt-5 border-t border-border">
         <p className="text-[14px] font-sans text-muted">
           <span className="font-serif text-[1.21rem] font-semibold text-charcoal">
             {loading ? "…" : totalCount}
@@ -218,14 +218,14 @@ export default function JobsList({
 
       {/* Job list */}
       {loading ? (
-        <div className="py-20 text-center border border-border border-t-0 bg-surface">
+        <div className="mt-5 py-20 text-center border border-border bg-surface">
           <p className="text-[15px] font-sans text-muted">Loading roles…</p>
         </div>
       ) : filtered.length > 0 ? (
         <>
-          <div className="bg-surface border border-border border-t-0">
+          <div className="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-5">
             {filtered.map((j) => (
-              <JobCard key={j.id} job={j} applied={appliedIds.has(j.id)} />
+              <JobCard key={j.id} job={j} variant="card" applied={appliedIds.has(j.id)} />
             ))}
           </div>
           {hasMore && (
@@ -240,7 +240,7 @@ export default function JobsList({
           )}
         </>
       ) : (
-        <div className="py-20 text-center border border-border border-t-0 bg-surface">
+        <div className="mt-5 py-20 text-center border border-border bg-surface">
           <p className="text-[15px] font-sans text-muted">
             {error ? "Couldn't load roles." : "No roles match your criteria."}
           </p>

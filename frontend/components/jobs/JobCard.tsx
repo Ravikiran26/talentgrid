@@ -1,11 +1,94 @@
 import Link from "next/link";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, MapPin, Briefcase, Wallet } from "lucide-react";
 import type { Job } from "@/types";
 import { formatSalary, formatExperience } from "@/lib/utils";
 
-interface Props { job: Job; featured?: boolean; applied?: boolean; }
+interface Props {
+  job: Job;
+  featured?: boolean;
+  applied?: boolean;
+  /** "card" is the self-contained tile used in the /jobs grid; "row" is the full-width list row. */
+  variant?: "row" | "card";
+}
 
-export default function JobCard({ job, featured = false, applied = false }: Props) {
+export default function JobCard({ job, featured = false, applied = false, variant = "row" }: Props) {
+
+  /* ── Grid card (Opportunities listing) ── */
+  if (variant === "card") {
+    return (
+      <article className="group relative bg-surface border border-border hover:border-brass/60 transition-colors duration-200 flex flex-col">
+        <div className="p-6 flex-1 flex flex-col">
+          <div className="flex items-start gap-4">
+            <div className="w-11 h-11 bg-ivory border border-border flex items-center justify-center flex-shrink-0 group-hover:border-brass/40 transition-colors duration-200">
+              <span className="text-[12px] font-sans font-bold text-muted group-hover:text-brass tracking-wider transition-colors duration-200">
+                {job.companyLogoInitials}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.22em] text-brass truncate">
+                  {job.category.replace(/-/g, " ")}
+                </p>
+                <span className="text-[12px] font-sans text-muted whitespace-nowrap">{job.postedAt}</span>
+              </div>
+              <h3 className="mt-1.5 font-serif text-[1.26rem] font-semibold text-charcoal group-hover:text-navy leading-snug transition-colors duration-150">
+                {/* The stretched link makes the whole card clickable. */}
+                <Link href={`/jobs/${job.id}`} className="after:absolute after:inset-0">
+                  {job.title}
+                </Link>
+              </h3>
+              <p className="mt-0.5 text-[14px] font-sans text-charcoal">{job.company}</p>
+            </div>
+          </div>
+
+          <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-2 text-[13.5px] font-sans text-muted">
+            <p className="flex items-center gap-2 min-w-0">
+              <MapPin className="w-4 h-4 flex-shrink-0 text-muted-light" />
+              <span className="truncate">{job.location}</span>
+            </p>
+            <p className="flex items-center gap-2 min-w-0">
+              <Briefcase className="w-4 h-4 flex-shrink-0 text-muted-light" />
+              <span className="truncate">{formatExperience(job.experienceMin, job.experienceMax)}</span>
+            </p>
+            {job.salaryMin != null && (
+              <p className="flex items-center gap-2 min-w-0 font-medium text-navy">
+                <Wallet className="w-4 h-4 flex-shrink-0 text-muted-light" />
+                <span className="truncate">{formatSalary(job.salaryMin, job.salaryMax)}</span>
+              </p>
+            )}
+          </div>
+
+          {job.skills.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-1.5">
+              {job.skills.slice(0, 3).map((s) => (
+                <span key={s}
+                  className="text-[12px] font-sans text-muted border border-border px-2.5 py-0.5 group-hover:border-navy/20 group-hover:text-charcoal transition-colors duration-200">
+                  {s}
+                </span>
+              ))}
+              {job.skills.length > 3 && (
+                <span className="text-[12px] font-sans text-muted/60 px-1 py-0.5">+{job.skills.length - 3}</span>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="px-6 py-3.5 border-t border-border flex items-center justify-between gap-3">
+          {applied ? (
+            <span className="inline-flex items-center gap-1 text-[12px] font-sans font-semibold uppercase tracking-[0.14em] text-green-700 bg-green-50 border border-green-200 px-2 py-0.5">
+              <CheckCircle2 className="w-3 h-3" /> Applied
+            </span>
+          ) : (
+            <span className="text-[12px] font-sans text-muted">{job.employmentType}</span>
+          )}
+          <span aria-hidden
+            className="text-[12px] font-sans font-semibold uppercase tracking-[0.16em] text-navy group-hover:text-brass transition-colors duration-150 whitespace-nowrap">
+            View role <span className="inline-block transition-transform duration-200 group-hover:translate-x-1">→</span>
+          </span>
+        </div>
+      </article>
+    );
+  }
 
   /* ── Featured card (used in hero) ── */
   if (featured) {
