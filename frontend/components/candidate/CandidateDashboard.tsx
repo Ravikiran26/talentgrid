@@ -13,11 +13,14 @@ import { type ApplicationRow, type CandidateProfile, missingProfileItems } from 
 
 import DashboardGreeting from "./DashboardGreeting";
 import DashboardSearch from "./DashboardSearch";
-import RecommendedJobs, { type RecommendedJob } from "./RecommendedJobs";
+import RecommendedJobs, { RecommendedHeader, type RecommendedJob } from "./RecommendedJobs";
 import CandidateActivity from "./CandidateActivity";
 import RecentApplications from "./RecentApplications";
 import OpportunityCategories, { type OpportunityGroup } from "./OpportunityCategories";
 import CareerInsights from "./CareerInsights";
+
+const MIN_MATCH = 60;
+const MAX_RECOMMENDED = 5;
 
 export default function CandidateDashboard({ user }: { user: AuthUser }) {
   const [loading, setLoading] = useState(true);
@@ -33,7 +36,7 @@ export default function CandidateDashboard({ user }: { user: AuthUser }) {
     const [p, a, j, ids, sub, stats, ins] = await Promise.allSettled([
       api.get<CandidateProfile>("/api/profile/me"),
       api.get<ApplicationRow[]>("/api/applications/my"),
-      fetchJobs({ size: 5 }),
+      fetchJobs({ size: 20 }),
       fetchSavedJobIds(),
       fetchSubscription(),
       fetchJobStats(),
@@ -66,48 +69,61 @@ export default function CandidateDashboard({ user }: { user: AuthUser }) {
   }
 
   const skills = profile.skills ?? [];
-  const recommended: RecommendedJob[] = jobs
+  const appliedJobIds = new Set(applications.map((a) => String(a.jobId)));
+  const scored: RecommendedJob[] = jobs
+    .filter((job) => !appliedJobIds.has(String(job.id)))
     .map((job) => ({
       job,
       match: skills.length > 0 ? computeMatch(job, skills, profile.totalExp ?? null) : null,
     }))
     .sort((x, y) => (y.match?.percent ?? 0) - (x.match?.percent ?? 0));
+  // Only show weak matches when there is nothing better to recommend.
+  const strong = scored.filter((r) => r.match === null || r.match.percent >= MIN_MATCH);
+  const recommended = (strong.length > 0 ? strong : scored).slice(0, MAX_RECOMMENDED);
 
-  const sorted = [...applications].sort(
+  const updatedAt = (a: ApplicationRow) => new Date(a.updatedAt ?? a.appliedAt).getTime();
+  const byRecentUpdate = [...applications].sort((x, y) => updatedAt(y) - updatedAt(x));
+  const byApplied = [...applications].sort(
     (x, y) => new Date(y.appliedAt).getTime() - new Date(x.appliedAt).getTime(),
   );
   const counts = {
     applications: applications.length,
-    underReview:  applications.filter((a) => a.status === "APPLIED").length,
+    underReview:  applications.filter((a) => a.status === "UNDER_REVIEW").length,
     shortlisted:  applications.filter((a) => a.status === "SHORTLISTED").length,
     saved:        savedIds.length,
   };
   const strength = profile.profileStrength ?? 0;
   const weeklyMatches = weekly.reduce((n, g) => n + g.count, 0);
+  const active = applications.filter((a) => a.status !== "REJECTED").length;
+  const summary = active > 0
+    ? `You have ${active} active ${active === 1 ? "application" : "applications"}${counts.shortlisted > 0 ? `, ${counts.shortlisted} shortlisted` : ""}.`
+    : "Find your next senior role.";
 
   return (
     <div className="bg-ivory min-h-screen">
       <div className="max-w-[1320px] mx-auto px-5 lg:px-8 py-6 lg:py-7 space-y-7">
         <DashboardGreeting
           firstName={user.fullName.split(" ")[0]}
+          summary={summary}
           weeklyMatches={weeklyMatches}
           strength={strength}
           missing={missingProfileItems(profile)}
+          shortlisted={byRecentUpdate.find((a) => a.status === "SHORTLISTED") ?? null}
         />
 
-        <DashboardSearch />
+        <DashboardSearch skills={skills} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-x-6 gap-y-4 items-start">
+          <RecommendedHeader className="lg:col-span-2" />
           <RecommendedJobs items={recommended} loading={loading} savedIds={savedIds} onToggleSave={handleToggleSave} />
           <CandidateActivity
             counts={counts}
-            latest={sorted[0] ?? null}
-            profileStrength={strength}
+            latest={byRecentUpdate[0] ?? null}
             subscription={subscription}
           />
         </div>
 
-        <RecentApplications applications={sorted} />
+        <RecentApplications applications={byApplied} />
         <OpportunityCategories groups={weekly} />
         <CareerInsights articles={insights} />
       </div>

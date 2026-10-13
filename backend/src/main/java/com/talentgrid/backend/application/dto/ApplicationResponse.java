@@ -14,7 +14,8 @@ public record ApplicationResponse(
         ApplicationStatus status,
         String coverLetter,
         String resumeUrl,
-        Instant appliedAt
+        Instant appliedAt,
+        Instant updatedAt
 ) {
     public static ApplicationResponse fromEntity(Application app) {
         return new ApplicationResponse(
@@ -26,7 +27,8 @@ public record ApplicationResponse(
                 app.getStatus(),
                 app.getCoverLetter(),
                 app.getResumeUrl(),
-                app.getAppliedAt()
+                app.getAppliedAt(),
+                app.getUpdatedAt()
         );
     }
 }

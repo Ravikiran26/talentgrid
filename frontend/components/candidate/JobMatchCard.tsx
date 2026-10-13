@@ -26,7 +26,13 @@ export default function JobMatchCard({ job, match, saved, onToggleSave }: Props)
           <h3 className="mt-1 font-sans text-[19px] font-semibold text-navy leading-snug">
             <Link href={`/jobs/${job.id}`} className="hover:text-brass transition-colors">{job.title}</Link>
           </h3>
-          <p className="mt-0.5 text-[15px] font-sans text-muted">{job.company}</p>
+          <p className="mt-0.5 text-[15px] font-sans text-muted">
+            {job.company}
+            <span className="mx-2 text-border">·</span>
+            {job.location}
+            <span className="mx-2 text-border">·</span>
+            {job.employmentType}
+          </p>
         </div>
         <div className="text-right flex-shrink-0">
           <p className="text-[16px] font-sans font-semibold text-navy">{formatSalary(job.salaryMin, job.salaryMax)}</p>
@@ -34,17 +40,11 @@ export default function JobMatchCard({ job, match, saved, onToggleSave }: Props)
         </div>
       </div>
 
-      <p className="mt-3 text-[14.5px] font-sans text-muted">
-        {job.location}
-        <span className="mx-2 text-border">·</span>
-        {job.employmentType}
-      </p>
-
-      <div className="mt-4 pt-4 border-t border-border">
+      <div className="mt-3.5 pt-3.5 border-t border-border">
         {match ? (
-          <>
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5">
             <p className="text-[12px] font-sans font-semibold uppercase tracking-[0.2em] text-muted">Why you match</p>
-            <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5">
+            <ul className="flex flex-wrap gap-x-5 gap-y-1.5">
               {match.matched.slice(0, 4).map((s) => (
                 <li key={s} className="inline-flex items-center gap-1.5 text-[14.5px] font-sans text-charcoal">
                   <Check className="w-3.5 h-3.5 text-[#2F7D55]" strokeWidth={2.5} /> {s}
@@ -56,7 +56,7 @@ export default function JobMatchCard({ job, match, saved, onToggleSave }: Props)
                 </li>
               ))}
             </ul>
-          </>
+          </div>
         ) : (
           <>
             <p className="text-[12px] font-sans font-semibold uppercase tracking-[0.2em] text-muted">Key requirements</p>
@@ -72,7 +72,7 @@ export default function JobMatchCard({ job, match, saved, onToggleSave }: Props)
         )}
       </div>
 
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-3.5 flex items-center justify-between">
         <span className="text-[13.5px] font-sans text-muted">Posted {job.postedAt}</span>
         <div className="flex items-center gap-3">
           <button type="button" onClick={() => onToggleSave(job.id)}

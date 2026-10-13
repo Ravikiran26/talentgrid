@@ -76,7 +76,7 @@ export default async function JobDetailsPage({ params }: PageProps<"/jobs/[id]">
             <div className="bg-surface border border-border divide-y divide-border">
               {job.description && (
                 <Sect title="About the Role">
-                  <p className="text-[16px] text-muted leading-relaxed">{job.description}</p>
+                  <p className="text-[16px] text-muted leading-relaxed whitespace-pre-line">{job.description}</p>
                 </Sect>
               )}
 
@@ -114,7 +114,7 @@ export default async function JobDetailsPage({ params }: PageProps<"/jobs/[id]">
 
               {job.aboutCompany && (
                 <Sect title={`About ${job.company}`}>
-                  <p className="text-[16px] text-muted leading-relaxed">{job.aboutCompany}</p>
+                  <p className="text-[16px] text-muted leading-relaxed whitespace-pre-line">{job.aboutCompany}</p>
                 </Sect>
               )}
             </div>

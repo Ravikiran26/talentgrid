@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { getUser } from "@/lib/auth";
 import { api } from "@/lib/api";
-import { formatRelativeDate } from "@/lib/utils";
+import { formatRelativeDateInline, formatMonthYear } from "@/lib/utils";
 
 type Status = "ACTIVE" | "UNDER_REVIEW" | "REJECTED";
 
@@ -26,6 +26,12 @@ const STATUS = {
   UNDER_REVIEW: { label: "Under Review", cls: "bg-amber-100 text-amber-700 border-amber-200", dot: "bg-amber-500", icon: Clock },
   REJECTED:     { label: "Rejected",     cls: "bg-red-100 text-red-700 border-red-200",       dot: "bg-red-400",   icon: XCircle },
 } as const;
+
+/** Stored files are named "<id>_<uuid>.pdf"; show a readable name instead. */
+function resumeDisplayName(fullName: string, stored: string) {
+  const ext = stored.includes(".") ? stored.slice(stored.lastIndexOf(".")) : "";
+  return `${fullName.trim().replace(/\s+/g, "_")}_Resume${ext}`;
+}
 
 function initials(name: string) {
   return name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
@@ -127,7 +133,7 @@ export default function AdminCandidatePage() {
                     <span className="inline-flex items-center gap-2"><Briefcase className="w-4 h-4 text-brass" />{exp} experience</span>
                   )}
                   {c.appliedAt && (
-                    <span className="inline-flex items-center gap-2"><Calendar className="w-4 h-4 text-brass" />Registered {formatRelativeDate(c.appliedAt).toLowerCase()}</span>
+                    <span className="inline-flex items-center gap-2"><Calendar className="w-4 h-4 text-brass" />Registered {formatRelativeDateInline(c.appliedAt ?? "")}</span>
                   )}
                 </div>
               </div>
@@ -174,7 +180,7 @@ export default function AdminCandidatePage() {
                         <p className="text-[14px] font-sans text-muted">{e.company}{e.location ? ` · ${e.location}` : ""}</p>
                       </div>
                       <span className={`text-[12px] font-sans px-2 py-0.5 flex-shrink-0 ${e.current ? "bg-green-50 text-green-700 border border-green-200" : "text-muted"}`}>
-                        {e.startDate ?? "—"} – {e.current ? "Present" : (e.endDate ?? "—")}
+                        {formatMonthYear(e.startDate) || "—"} – {e.current ? "Present" : (formatMonthYear(e.endDate) || "—")}
                       </span>
                     </div>
                     {e.description && <p className="mt-2 text-[14px] font-sans text-muted leading-relaxed max-w-3xl">{e.description}</p>}
@@ -232,7 +238,7 @@ export default function AdminCandidatePage() {
               <>
                 <div className="mt-3 flex items-center gap-3">
                   <div className="w-10 h-10 bg-navy flex items-center justify-center flex-shrink-0"><FileText className="w-4 h-4 text-brass" /></div>
-                  <p className="text-[13px] font-sans text-muted truncate">{c.resumeFile}</p>
+                  <p className="text-[13px] font-sans text-muted truncate">{resumeDisplayName(c.fullName, c.resumeFile)}</p>
                 </div>
                 <button type="button" onClick={openResume} disabled={busy === "resume"}
                   className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 text-[13px] font-sans font-semibold uppercase tracking-[0.16em] text-surface bg-navy hover:bg-navy-mid transition-colors disabled:opacity-60">

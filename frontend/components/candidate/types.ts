@@ -6,6 +6,8 @@ export interface ApplicationRow {
   location: string;
   status: string;
   appliedAt: string;
+  /** Last status change; falls back to appliedAt on older rows. */
+  updatedAt?: string;
 }
 
 export interface CandidateProfile {

@@ -7,7 +7,6 @@ import { Eye, EyeOff, AlertCircle, Check } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { setSession, type AuthUser } from "@/lib/auth";
 import SocialAuth from "@/components/auth/SocialAuth";
-import StatStrip from "@/components/home/StatStrip";
 
 interface FormErrors {
   email?: string;
@@ -25,9 +24,8 @@ function validate(email: string, password: string): FormErrors {
 
 const TRUST_POINTS = [
   "Apply with your TalentGrid profile in one click",
-  "Get matched to pre-screened PM roles only",
-  "Track your application status at every stage",
-  "Get discovered by India's top hiring organisations",
+  "Get matched to pre-screened senior roles",
+  "Track every application from submission to offer",
 ];
 
 export default function LoginPage() {
@@ -82,171 +80,136 @@ export default function LoginPage() {
               <Link href="/about" className="text-[15px] font-sans text-muted hover:text-charcoal transition-colors">About</Link>
               <Link href="/for-employers" className="text-[15px] font-sans text-muted hover:text-charcoal transition-colors">For Employers</Link>
             </nav>
-            <div className="flex items-center gap-3">
-              <Link href="/login"
-                className="text-[14px] font-sans font-medium text-navy border border-navy px-5 py-2 hover:bg-navy hover:text-surface transition-colors duration-150">
-                Login
+            <p className="text-[14px] font-sans text-muted">
+              <span className="hidden sm:inline">New to TalentGrid? </span>
+              <Link href="/register" className="font-semibold text-navy hover:text-brass transition-colors">
+                Create an account
               </Link>
-              <Link href="/register"
-                className="text-[14px] font-sans font-medium text-surface bg-brass hover:bg-brass-hover px-5 py-2 transition-colors duration-150">
-                Register
-              </Link>
-            </div>
+            </p>
           </div>
         </div>
       </div>
 
       {/* ── Main content ── */}
-      <div className="flex-1 flex items-center justify-center px-4 py-14">
-        <div className="w-full max-w-[940px] flex gap-5 items-stretch">
+      <div className="flex-1 flex items-center justify-center px-4 py-10 md:py-14">
+        <div className="w-full max-w-[920px] grid md:grid-cols-[minmax(0,1fr)_440px] bg-surface border border-border overflow-hidden"
+          style={{ boxShadow: "0 4px 24px rgba(7,24,39,0.08)" }}>
 
-          {/* ── Left card: value proposition ── */}
-          <div className="hidden md:flex flex-col flex-1 bg-surface border border-border overflow-hidden"
-            style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.07)" }}>
+          {/* ── Left panel: value proposition ── */}
+          <div className="hidden md:flex flex-col justify-between bg-navy px-11 py-12 relative overflow-hidden">
+            {/* Subtle grid texture */}
+            <div className="absolute inset-0 opacity-[0.04]" style={{
+              backgroundImage: [
+                "repeating-linear-gradient(0deg,var(--color-brass) 0,var(--color-brass) 1px,transparent 1px,transparent 60px)",
+                "repeating-linear-gradient(90deg,var(--color-brass) 0,var(--color-brass) 1px,transparent 1px,transparent 60px)",
+              ].join(","),
+            }} />
 
-            {/* Navy header strip */}
-            <div className="bg-navy px-10 pt-9 pb-8 relative overflow-hidden">
-              {/* Subtle grid texture */}
-              <div className="absolute inset-0 opacity-[0.04]" style={{
-                backgroundImage: [
-                  "repeating-linear-gradient(0deg,var(--color-brass) 0,var(--color-brass) 1px,transparent 1px,transparent 60px)",
-                  "repeating-linear-gradient(90deg,var(--color-brass) 0,var(--color-brass) 1px,transparent 1px,transparent 60px)",
-                ].join(","),
-              }} />
-              <div className="relative">
-                <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.3em] text-brass mb-3">
-                  New to TalentGrid?
-                </p>
-                <h2 className="font-serif text-[1.93rem] font-bold text-surface leading-tight">
-                  Your next career<br />move starts here.
-                </h2>
-              </div>
-            </div>
+            <div className="relative">
+              <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.3em] text-brass">
+                Executive Careers
+              </p>
+              <h2 className="mt-4 font-serif text-[2rem] font-bold text-surface leading-[1.2]">
+                Your next career<br />move starts here.
+              </h2>
 
-            {/* Trust points */}
-            <div className="px-10 py-8 flex-1">
-              <ul className="space-y-5">
+              <ul className="mt-10 space-y-5">
                 {TRUST_POINTS.map((point) => (
-                  <li key={point} className="flex items-start gap-4">
-                    <div className="mt-0.5 w-5 h-5 bg-navy/8 border border-navy/15 flex items-center justify-center flex-shrink-0">
-                      <Check className="w-3 h-3 text-brass" strokeWidth={2.5} />
-                    </div>
-                    <span className="text-[15px] font-sans text-charcoal leading-snug">{point}</span>
+                  <li key={point} className="flex items-start gap-3.5">
+                    <Check className="mt-0.5 w-4 h-4 text-brass flex-shrink-0" strokeWidth={2.5} />
+                    <span className="text-[15px] font-sans text-navy-text leading-snug">{point}</span>
                   </li>
                 ))}
               </ul>
-
-              <div className="mt-9">
-                <Link href="/register"
-                  className="inline-flex items-center gap-2 text-[14px] font-sans font-semibold uppercase tracking-[0.18em] text-navy border border-navy px-7 py-3 hover:bg-navy hover:text-surface transition-all duration-150">
-                  Register for Free →
-                </Link>
-              </div>
             </div>
 
-            {/* Stat strip bottom */}
-            <div className="border-t border-border px-10 py-6">
-              <StatStrip items={[{ key: "activeJobs", label: "Open Roles" }, { key: "companies", label: "Companies" }, { key: "cities", label: "Cities" }]} />
-            </div>
+            <p className="relative mt-12 pt-6 border-t border-navy-border text-[13.5px] font-sans text-navy-text-light leading-relaxed">
+              Senior roles in Technology, Management and Operations across India.
+            </p>
           </div>
 
-          {/* ── Right card: login form ── */}
-          <div className="w-full md:w-[390px] flex-shrink-0 bg-surface border border-border"
-            style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.07)" }}>
+          {/* ── Right panel: login form ── */}
+          <div className="px-8 sm:px-11 py-11">
+            <h1 className="font-serif text-[1.85rem] font-bold text-navy leading-tight">Welcome back</h1>
+            <p className="mt-2 text-[15px] font-sans text-muted">Sign in to continue to TalentGrid.</p>
 
-            <div className="px-9 pt-9 pb-9">
+            <form onSubmit={handleSubmit} noValidate className="mt-8 space-y-5">
 
-              <h1 className="font-serif text-[1.93rem] font-bold text-navy mb-7">
-                Login
-              </h1>
-
-              <form onSubmit={handleSubmit} noValidate className="space-y-5">
-
-                {/* Email */}
-                <div>
-                  <label htmlFor="email"
-                    className="block text-[13px] font-sans font-semibold text-charcoal mb-1.5">
-                    Email ID / Username
-                  </label>
-                  <input
-                    id="email" type="email" autoComplete="email" required
-                    value={email}
-                    onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors(p => ({ ...p, email: undefined })); }}
-                    placeholder="Enter Email ID / Username"
-                    className={`w-full px-4 py-3 text-[15px] font-sans text-charcoal placeholder-muted-light bg-white border focus:outline-none transition-colors duration-150 ${
-                      errors.email ? "border-red-400" : "border-input focus:border-navy"
-                    }`}
-                  />
-                  {errors.email && (
-                    <p className="mt-1.5 flex items-center gap-1.5 text-[13px] font-sans text-red-600">
-                      <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />{errors.email}
-                    </p>
-                  )}
-                </div>
-
-                {/* Password */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label htmlFor="pwd" className="text-[13px] font-sans font-semibold text-charcoal">
-                      Password
-                    </label>
-                    <Link href="/forgot-password"
-                      className="text-[14px] font-sans text-brass hover:text-brass-hover transition-colors">
-                      Forgot Password?
-                    </Link>
-                  </div>
-                  <div className="relative">
-                    <input
-                      id="pwd" type={showPwd ? "text" : "password"} autoComplete="current-password" required
-                      value={password}
-                      onChange={(e) => { setPassword(e.target.value); if (errors.password) setErrors(p => ({ ...p, password: undefined })); }}
-                      placeholder="Enter Password"
-                      className={`w-full px-4 py-3 pr-16 text-[15px] font-sans text-charcoal placeholder-muted-light bg-white border focus:outline-none transition-colors duration-150 ${
-                        errors.password ? "border-red-400" : "border-input focus:border-navy"
-                      }`}
-                    />
-                    <button type="button" onClick={() => setShowPwd(!showPwd)}
-                      className="absolute inset-y-0 right-0 px-4 text-[14px] font-sans font-medium text-brass hover:text-brass-hover transition-colors"
-                      aria-label={showPwd ? "Hide password" : "Show password"}>
-                      {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                  {errors.password && (
-                    <p className="mt-1.5 flex items-center gap-1.5 text-[13px] font-sans text-red-600">
-                      <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />{errors.password}
-                    </p>
-                  )}
-                </div>
-
-                {apiError && (
-                  <p className="flex items-center gap-2 text-[14px] font-sans text-red-600 bg-red-50 border border-red-200 px-4 py-3">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" />{apiError}
+              {/* Email */}
+              <div>
+                <label htmlFor="email"
+                  className="block text-[13px] font-sans font-semibold text-charcoal mb-1.5">
+                  Email
+                </label>
+                <input
+                  id="email" type="email" autoComplete="email" required
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors(p => ({ ...p, email: undefined })); }}
+                  placeholder="you@company.com"
+                  className={`w-full px-4 py-3 text-[15px] font-sans text-charcoal placeholder-muted-light bg-white border focus:outline-none transition-colors duration-150 ${
+                    errors.email ? "border-red-400" : "border-input focus:border-navy"
+                  }`}
+                />
+                {errors.email && (
+                  <p className="mt-1.5 flex items-center gap-1.5 text-[13px] font-sans text-red-600">
+                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />{errors.email}
                   </p>
                 )}
+              </div>
 
-                <button type="submit" disabled={loading}
-                  className="w-full py-3.5 text-[15px] font-sans font-semibold text-surface bg-navy hover:bg-navy-mid active:bg-charcoal transition-colors duration-150 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed">
-                  {loading ? "Logging in…" : "Login"}
-                </button>
-              </form>
+              {/* Password */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label htmlFor="pwd" className="text-[13px] font-sans font-semibold text-charcoal">
+                    Password
+                  </label>
+                  <Link href="/forgot-password"
+                    className="text-[13.5px] font-sans text-brass hover:text-brass-hover transition-colors">
+                    Forgot password?
+                  </Link>
+                </div>
+                <div className="relative">
+                  <input
+                    id="pwd" type={showPwd ? "text" : "password"} autoComplete="current-password" required
+                    value={password}
+                    onChange={(e) => { setPassword(e.target.value); if (errors.password) setErrors(p => ({ ...p, password: undefined })); }}
+                    className={`w-full px-4 py-3 pr-12 text-[15px] font-sans text-charcoal bg-white border focus:outline-none transition-colors duration-150 ${
+                      errors.password ? "border-red-400" : "border-input focus:border-navy"
+                    }`}
+                  />
+                  <button type="button" onClick={() => setShowPwd(!showPwd)}
+                    className="absolute inset-y-0 right-0 px-4 text-muted hover:text-navy transition-colors"
+                    aria-label={showPwd ? "Hide password" : "Show password"}>
+                    {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="mt-1.5 flex items-center gap-1.5 text-[13px] font-sans text-red-600">
+                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />{errors.password}
+                  </p>
+                )}
+              </div>
 
-              <SocialAuth mode="login" />
+              {apiError && (
+                <p className="flex items-center gap-2 text-[14px] font-sans text-red-600 bg-red-50 border border-red-200 px-4 py-3">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />{apiError}
+                </p>
+              )}
 
-              {/* Mobile register link */}
-              <p className="md:hidden mt-6 text-center text-[14px] font-sans text-muted">
-                New here?{" "}
-                <Link href="/register" className="text-navy font-medium underline underline-offset-2">
-                  Register for free
-                </Link>
-              </p>
-            </div>
+              <button type="submit" disabled={loading}
+                className="w-full py-3.5 text-[15px] font-sans font-semibold text-surface bg-navy hover:bg-navy-mid active:bg-charcoal transition-colors duration-150 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed">
+                {loading ? "Signing in…" : "Sign in"}
+              </button>
+            </form>
 
-            {/* Card footer */}
-            <div className="border-t border-border px-9 py-4">
-              <p className="text-[12px] font-sans text-muted/60 text-center">
-                &copy; {new Date().getFullYear()} TalentGrid · Executive Careers · India
-              </p>
-            </div>
+            <SocialAuth mode="login" />
+
+            <p className="mt-8 text-center text-[14px] font-sans text-muted">
+              New to TalentGrid?{" "}
+              <Link href="/register" className="font-semibold text-navy hover:text-brass transition-colors">
+                Create an account
+              </Link>
+            </p>
           </div>
         </div>
       </div>

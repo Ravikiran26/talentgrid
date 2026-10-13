@@ -2,78 +2,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Pencil, Trash2, X, MapPin, Briefcase, Users, CheckCircle2, ChevronRight, Mail, Phone, Clock, XCircle, FileText, RotateCcw } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, X, MapPin, Briefcase, Users, CheckCircle2, RotateCcw, AlertCircle } from "lucide-react";
 import { getUser } from "@/lib/auth";
 import Pager from "@/components/ui/Pager";
-import { api } from "@/lib/api";
-import { formatSalary, formatExperience, formatRelativeDate } from "@/lib/utils";
+import { api, ApiError } from "@/lib/api";
+import { formatSalary, formatExperience } from "@/lib/utils";
 import type { Job } from "@/types";
-
-interface Applicant {
-  id: string | number;
-  candidateId: string | number;
-  fullName: string;
-  email: string;
-  phone?: string;
-  city?: string;
-  totalExp?: string;
-  headline?: string;
-  skills?: string[];
-  hasResume?: boolean;
-  status: "APPLIED" | "UNDER_REVIEW" | "SHORTLISTED" | "REJECTED";
-  appliedAt: string;
-}
-
-/** Shape returned by the backend; flattened into `Applicant` for rendering. */
-interface ApplicantDto {
-  applicationId: number;
-  status: "APPLIED" | "UNDER_REVIEW" | "SHORTLISTED" | "REJECTED";
-  appliedAt: string;
-  candidate: {
-    id: number; fullName: string; email: string; phone?: string | null; headline?: string | null;
-    city?: string | null; totalExp?: number | null; skills?: string[]; resumeFile?: string | null;
-  };
-}
-
-function flattenApplicant(d: ApplicantDto): Applicant {
-  const c = d.candidate;
-  return {
-    id: d.applicationId,
-    candidateId: c.id,
-    fullName: c.fullName ?? "",
-    email: c.email ?? "",
-    phone: c.phone ?? undefined,
-    city: c.city ?? undefined,
-    totalExp: c.totalExp != null ? `${c.totalExp} yrs` : undefined,
-    headline: c.headline ?? undefined,
-    skills: c.skills ?? [],
-    hasResume: !!c.resumeFile,
-    status: d.status,
-    appliedAt: d.appliedAt,
-  };
-}
-
-/** Opens the applicant's resume in a new tab (needs the bearer token, so fetch as a blob). */
-async function openResume(path: string, setBusy: (b: boolean) => void) {
-  setBusy(true);
-  try {
-    const blob = await api.downloadBlob(path);
-    const url = URL.createObjectURL(blob);
-    window.open(url, "_blank", "noopener");
-    setTimeout(() => URL.revokeObjectURL(url), 60_000);
-  } catch {
-    /* no resume or not permitted */
-  } finally {
-    setBusy(false);
-  }
-}
-
-const APP_STATUS = {
-  APPLIED:      { label: "Applied",      color: "bg-blue-50 text-blue-700 border-blue-200",    dot: "bg-blue-400",  icon: Clock },
-  UNDER_REVIEW: { label: "Under Review", color: "bg-amber-50 text-amber-700 border-amber-200", dot: "bg-amber-500", icon: Clock },
-  SHORTLISTED: { label: "Shortlisted",  color: "bg-green-50 text-green-700 border-green-200", dot: "bg-green-500", icon: CheckCircle2 },
-  REJECTED:    { label: "Not Selected", color: "bg-red-50 text-red-600 border-red-200",        dot: "bg-red-400",   icon: XCircle },
-};
 
 /* ── Blank job form state ──────────────────────────────────── */
 const BLANK: Omit<Job, "id" | "companyLogoInitials" | "postedAt"> = {
@@ -110,9 +44,6 @@ export default function AdminJobsPage() {
   const [showForm,    setShowForm]    = useState(false);
   const [editing,     setEditing]     = useState<Job | null>(null);
   const [deleting,    setDeleting]    = useState<string | null>(null);
-  const [applicantsJob, setApplicantsJob] = useState<Job | null>(null);
-  const [applicants,    setApplicants]    = useState<Applicant[]>([]);
-  const [appsLoading,   setAppsLoading]   = useState(false);
 
   const fetchJobs = useCallback(async () => {
     setFetching(true);
@@ -138,6 +69,10 @@ export default function AdminJobsPage() {
         salaryMax:           j.salaryMax != null ? Number(j.salaryMax) : undefined,
         skills:              Array.isArray(j.skills) ? j.skills.map(String) : [],
         description:         j.description != null ? String(j.description) : undefined,
+        responsibilities:    Array.isArray(j.responsibilities) ? j.responsibilities.map(String) : [],
+        requirements:        Array.isArray(j.requirements) ? j.requirements.map(String) : [],
+        education:           j.education != null ? String(j.education) : undefined,
+        aboutCompany:        j.aboutCompany != null ? String(j.aboutCompany) : undefined,
         openings:            j.openings != null ? Number(j.openings) : undefined,
         postedAt:            String(j.postedAt ?? ""),
         active:              j.active !== false,
@@ -156,28 +91,6 @@ export default function AdminJobsPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchJobs();
   }, [router, fetchJobs]);
-
-  async function openApplicants(job: Job) {
-    setApplicantsJob(job);
-    setAppsLoading(true);
-    try {
-      const data = await api.get<ApplicantDto[]>(`/api/admin/jobs/${job.id}/applications`);
-      setApplicants(data.map(flattenApplicant));
-    } catch {
-      setApplicants([]);
-    } finally {
-      setAppsLoading(false);
-    }
-  }
-
-  async function updateAppStatus(appId: string | number, status: "UNDER_REVIEW" | "SHORTLISTED" | "REJECTED") {
-    try {
-      await api.patch(`/api/admin/applications/${appId}/status`, { status });
-      setApplicants((prev) =>
-        prev.map((a) => String(a.id) === String(appId) ? { ...a, status } : a)
-      );
-    } catch { /* ignore */ }
-  }
 
   async function handleDelete(id: string) {
     try {
@@ -316,7 +229,7 @@ export default function AdminJobsPage() {
                 <div className="md:col-span-2 flex items-center justify-end gap-2 flex-wrap">
                   <button
                     type="button"
-                    onClick={() => openApplicants(j)}
+                    onClick={() => router.push(`/admin/jobs/${j.id}/applicants`)}
                     className="flex items-center gap-1.5 text-[13px] font-sans font-semibold uppercase tracking-[0.14em] text-brass border border-brass/40 px-3 py-2 hover:bg-brass/10 transition-colors"
                   >
                     <Users className="w-3 h-3" /> Applicants
@@ -360,17 +273,6 @@ export default function AdminJobsPage() {
         <Pager page={page} totalPages={totalPages} totalCount={totalCount} pageSize={PAGE_SIZE} onChange={setPage} disabled={fetching} />
       </div>
 
-      {/* ── Applicants panel ── */}
-      {applicantsJob && (
-        <ApplicantsPanel
-          job={applicantsJob}
-          applicants={applicants}
-          loading={appsLoading}
-          onClose={() => { setApplicantsJob(null); setApplicants([]); }}
-          onStatusChange={updateAppStatus}
-        />
-      )}
-
       {/* ── Job form modal ── */}
       {showForm && (
         <JobFormModal
@@ -403,135 +305,9 @@ export default function AdminJobsPage() {
   );
 }
 
-/* ── Applicants panel ───────────────────────────────────────── */
-function ApplicantsPanel({ job, applicants, loading, onClose, onStatusChange }: {
-  job: Job;
-  applicants: Applicant[];
-  loading: boolean;
-  onClose: () => void;
-  onStatusChange: (id: string | number, status: "UNDER_REVIEW" | "SHORTLISTED" | "REJECTED") => void;
-}) {
-  const [resumeBusy, setResumeBusy] = useState<string | number | null>(null);
-  return (
-    <>
-      <div className="fixed inset-0 bg-navy/50 z-40 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="fixed right-0 top-0 bottom-0 w-full max-w-[560px] bg-surface z-50 overflow-y-auto"
-        style={{ boxShadow: "-8px 0 40px rgba(0,0,0,0.2)" }}>
-
-        {/* Header */}
-        <div className="sticky top-0 bg-navy z-10 border-b border-navy-border">
-          <div className="h-[2px] bg-brass" />
-          <div className="px-8 py-5 flex items-start justify-between">
-            <div>
-              <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.3em] text-brass mb-0.5">Applicants</p>
-              <h2 className="font-serif text-xl font-bold text-surface leading-tight">{job.title}</h2>
-              <p className="text-[13px] font-sans text-navy-text mt-0.5">{job.company}</p>
-            </div>
-            <button type="button" onClick={onClose} className="text-navy-text hover:text-surface transition-colors mt-1">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-
-        <div className="px-8 py-6">
-          {loading ? (
-            <p className="text-[15px] font-sans text-muted text-center py-12">Loading applicants…</p>
-          ) : applicants.length === 0 ? (
-            <div className="text-center py-16">
-              <Users className="w-8 h-8 text-muted mx-auto mb-3" />
-              <p className="text-[15px] font-sans text-muted">No applications yet for this role.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <p className="text-[13px] font-sans text-muted">{applicants.length} {applicants.length === 1 ? "applicant" : "applicants"}</p>
-              {applicants.map((a) => {
-                const cfg = APP_STATUS[a.status];
-                return (
-                  <div key={a.id} className="border border-border bg-ivory p-5">
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-navy rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-[12px] font-sans font-bold text-brass">
-                            {a.fullName.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase()}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="font-serif text-[1.04rem] font-bold text-navy leading-tight">{a.fullName}</p>
-                          {a.headline && <p className="text-[13px] font-sans text-muted mt-0.5 line-clamp-1">{a.headline}</p>}
-                        </div>
-                      </div>
-                      <span className={`flex items-center gap-1.5 text-[12px] font-sans font-semibold px-2 py-1 border flex-shrink-0 ${cfg.color}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-                        {cfg.label}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] font-sans text-muted mb-3">
-                      {a.email && (
-                        <a href={`mailto:${a.email}`} className="flex items-center gap-1.5 hover:text-navy transition-colors">
-                          <Mail className="w-3 h-3" />{a.email}
-                        </a>
-                      )}
-                      {a.phone && <span className="flex items-center gap-1.5"><Phone className="w-3 h-3" />{a.phone}</span>}
-                      {a.city && <span className="flex items-center gap-1.5"><MapPin className="w-3 h-3" />{a.city}</span>}
-                      {a.totalExp && <span className="flex items-center gap-1.5"><Briefcase className="w-3 h-3" />{a.totalExp}</span>}
-                    </div>
-
-                    {(a.skills ?? []).length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-3">
-                        {(a.skills ?? []).slice(0, 4).map((s) => (
-                          <span key={s} className="text-[11px] font-sans text-muted border border-border px-2 py-0.5">{s}</span>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-between pt-3 border-t border-border">
-<span className="flex items-center gap-3">
-                        <span className="text-[12px] font-sans text-muted">Applied {formatRelativeDate(a.appliedAt)}</span>
-                        {a.hasResume && (
-                          <button type="button" disabled={resumeBusy === a.id}
-                            onClick={() => { setResumeBusy(a.id); openResume(`/api/admin/candidates/${a.candidateId}/resume`, () => setResumeBusy(null)); }}
-                            className="flex items-center gap-1 text-[12px] font-sans font-semibold uppercase tracking-[0.14em] text-navy hover:text-brass transition-colors disabled:opacity-50">
-                            <FileText className="w-3 h-3" /> Resume
-                          </button>
-                        )}
-                      </span>
-                      {a.status === "APPLIED" && (
-                        <div className="flex gap-2">
-                          <button type="button"
-                            onClick={() => onStatusChange(a.id, "UNDER_REVIEW")}
-                            className="text-[12px] font-sans font-semibold uppercase tracking-[0.14em] text-amber-700 border border-amber-300 px-3 py-1.5 hover:bg-amber-50 transition-colors">
-                            Reviewing
-                          </button>
-                          <button type="button"
-                            onClick={() => onStatusChange(a.id, "SHORTLISTED")}
-                            className="text-[12px] font-sans font-semibold uppercase tracking-[0.14em] text-green-700 border border-green-300 px-3 py-1.5 hover:bg-green-50 transition-colors">
-                            Shortlist
-                          </button>
-                          <button type="button"
-                            onClick={() => onStatusChange(a.id, "REJECTED")}
-                            className="text-[12px] font-sans font-semibold uppercase tracking-[0.14em] text-red-600 border border-red-200 px-3 py-1.5 hover:bg-red-50 transition-colors">
-                            Reject
-                          </button>
-                        </div>
-                      )}
-                      {a.status !== "APPLIED" && (
-                        <button type="button"
-                          onClick={() => onStatusChange(a.id, a.status === "SHORTLISTED" ? "REJECTED" : "SHORTLISTED")}
-                          className="text-[12px] font-sans text-muted hover:text-navy transition-colors flex items-center gap-1">
-                          Change <ChevronRight className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-    </>
-  );
+/** One list item per non-empty line. */
+function toLines(text: string): string[] {
+  return text.split("\n").map((l) => l.replace(/^\s*[-•*]\s*/, "").trim()).filter(Boolean);
 }
 
 /* ── Job form modal ─────────────────────────────────────────── */
@@ -553,9 +329,14 @@ function JobFormModal({ initial, onClose, onSaved }: {
     description:    initial?.description    ?? BLANK.description,
     openings:       initial?.openings       ?? BLANK.openings,
     skillsRaw:      (initial?.skills ?? []).join(", "),
+    responsibilitiesRaw: (initial?.responsibilities ?? []).join("\n"),
+    requirementsRaw:     (initial?.requirements ?? []).join("\n"),
+    education:           initial?.education    ?? "",
+    aboutCompany:        initial?.aboutCompany ?? "",
   });
   const [saving,  setSaving]  = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error,   setError]   = useState<string | null>(null);
 
   function set(key: string, val: unknown) {
     setForm((prev) => ({ ...prev, [key]: val }));
@@ -564,6 +345,7 @@ function JobFormModal({ initial, onClose, onSaved }: {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
+    setError(null);
     const payload = {
       title:          form.title,
       company:        form.company,
@@ -577,6 +359,10 @@ function JobFormModal({ initial, onClose, onSaved }: {
       description:    form.description,
       openings:       Number(form.openings),
       skills:         form.skillsRaw.split(",").map((s) => s.trim()).filter(Boolean),
+      responsibilities: toLines(form.responsibilitiesRaw),
+      requirements:     toLines(form.requirementsRaw),
+      education:        form.education.trim() || null,
+      aboutCompany:     form.aboutCompany.trim() || null,
     };
     try {
       if (initial) {
@@ -586,7 +372,8 @@ function JobFormModal({ initial, onClose, onSaved }: {
       }
       setSuccess(true);
       setTimeout(onSaved, 900);
-    } catch {
+    } catch (err) {
+      setError(err instanceof ApiError ? err.detail : err instanceof Error ? err.message : "Could not save the job.");
       setSaving(false);
     }
   }
@@ -622,6 +409,11 @@ function JobFormModal({ initial, onClose, onSaved }: {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="px-8 py-6 space-y-5">
+            {error && (
+              <p role="alert" className="flex items-center gap-2 text-[14px] font-sans text-red-600 bg-red-50 border border-red-200 px-4 py-3">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />{error}
+              </p>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Job Title *">
@@ -700,8 +492,32 @@ function JobFormModal({ initial, onClose, onSaved }: {
 
             <Field label="Job Description">
               <textarea rows={5} value={form.description} onChange={(e) => set("description", e.target.value)}
-                placeholder="Describe the role, responsibilities, and what you're looking for…"
-                className="w-full px-4 py-2.5 text-[15px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal placeholder-muted resize-none" />
+                placeholder="Overview of the role. Leave a blank line between paragraphs."
+                className="w-full px-4 py-2.5 text-[15px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal placeholder-muted resize-y" />
+            </Field>
+
+            <Field label="Key Responsibilities (one per line)">
+              <textarea rows={4} value={form.responsibilitiesRaw} onChange={(e) => set("responsibilitiesRaw", e.target.value)}
+                placeholder={"Lead programme planning and budgeting\nRun PI planning across teams"}
+                className="w-full px-4 py-2.5 text-[15px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal placeholder-muted resize-y" />
+            </Field>
+
+            <Field label="What We Are Looking For (one per line)">
+              <textarea rows={4} value={form.requirementsRaw} onChange={(e) => set("requirementsRaw", e.target.value)}
+                placeholder={"8+ years in programme management\nPMP or SAFe certification"}
+                className="w-full px-4 py-2.5 text-[15px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal placeholder-muted resize-y" />
+            </Field>
+
+            <Field label="Education">
+              <input value={form.education} onChange={(e) => set("education", e.target.value)}
+                placeholder="e.g. Bachelor's degree in Engineering or equivalent"
+                className="w-full px-4 py-2.5 text-[15px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal placeholder-muted" />
+            </Field>
+
+            <Field label="About the Company">
+              <textarea rows={3} value={form.aboutCompany} onChange={(e) => set("aboutCompany", e.target.value)}
+                placeholder="A short introduction to the hiring company"
+                className="w-full px-4 py-2.5 text-[15px] font-sans border border-border bg-surface focus:outline-none focus:border-navy text-charcoal placeholder-muted resize-y" />
             </Field>
 
             <div className="flex gap-3 pt-2">

@@ -32,6 +32,17 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
+/** "today", "3 days ago" etc., or null once it would just repeat the date. */
+function relative(iso: string): string | null {
+  const r = formatRelativeDate(iso);
+  return r === fmtDate(iso) ? null : r.toLowerCase();
+}
+
+/** A passed stage can lack a history row (applications created before history was tracked). */
+function stageLabel(date: string | null, done: boolean) {
+  return date ? fmtDate(date) : done ? "Completed" : "Pending";
+}
+
 export default function ApplicationDetailPage() {
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
@@ -137,7 +148,7 @@ export default function ApplicationDetailPage() {
                     {isRejectionSlot ? "The hiring team decided not to move forward." : step.blurb}
                   </p>
                   <p className="mt-2 text-[12.5px] font-sans text-muted/80">
-                    {date ? fmtDate(date) : "Pending"}
+                    {stageLabel(date, done)}
                   </p>
                 </li>
               );
@@ -162,7 +173,7 @@ export default function ApplicationDetailPage() {
                       {isRejectionSlot ? "Not selected" : step.title}
                     </p>
                     <p className="mt-0.5 text-[13.5px] font-sans text-muted">{isRejectionSlot ? "The hiring team decided not to move forward." : step.blurb}</p>
-                    <p className="mt-1 text-[12.5px] font-sans text-muted/80">{date ? fmtDate(date) : "Pending"}</p>
+                    <p className="mt-1 text-[12.5px] font-sans text-muted/80">{stageLabel(date, done)}</p>
                   </div>
                 </li>
               );
@@ -181,7 +192,7 @@ export default function ApplicationDetailPage() {
                     <span className={`absolute -left-[5px] top-1.5 w-2 h-2 rounded-full ${t.status === "REJECTED" ? "bg-red-400" : "bg-brass"}`} />
                     <div className="flex items-center justify-between gap-3 flex-wrap">
                       <ApplicationStatusBadge status={t.status} />
-                      <span className="text-[12.5px] font-sans text-muted">{fmtDate(t.changedAt)} · {formatRelativeDate(t.changedAt).toLowerCase()}</span>
+                      <span className="text-[12.5px] font-sans text-muted">{fmtDate(t.changedAt)}{relative(t.changedAt) && ` · ${relative(t.changedAt)}`}</span>
                     </div>
                     {t.note && <p className="mt-2 text-[14px] font-sans text-charcoal">{t.note}</p>}
                   </li>
@@ -192,7 +203,7 @@ export default function ApplicationDetailPage() {
             {/* The role */}
             <section className="bg-surface border border-border p-7">
               <h2 className="text-[12px] font-sans font-semibold uppercase tracking-[0.22em] text-muted mb-4">About the role</h2>
-              {job.description && <p className="text-[15px] font-sans text-charcoal leading-relaxed">{job.description}</p>}
+              {job.description && <p className="text-[15px] font-sans text-charcoal leading-relaxed whitespace-pre-line">{job.description}</p>}
               {job.skills.length > 0 && (
                 <div className="mt-5 flex flex-wrap gap-2">
                   {job.skills.map((s) => (
@@ -217,7 +228,9 @@ export default function ApplicationDetailPage() {
             <div className="bg-surface border border-border p-6">
               <p className="text-[12px] font-sans font-semibold uppercase tracking-[0.22em] text-muted">Applied on</p>
               <p className="mt-2 font-serif text-2xl font-bold text-navy leading-none">{fmtDate(d.appliedAt)}</p>
-              <p className="mt-2 text-[13.5px] font-sans text-muted">{formatRelativeDate(d.appliedAt)}</p>
+              {relative(d.appliedAt) && (
+                <p className="mt-2 text-[13.5px] font-sans text-muted first-letter:uppercase">{relative(d.appliedAt)}</p>
+              )}
             </div>
             <div className="bg-surface border border-border p-6">
               <p className="text-[12px] font-sans font-semibold uppercase tracking-[0.22em] text-muted mb-3">What happens next</p>

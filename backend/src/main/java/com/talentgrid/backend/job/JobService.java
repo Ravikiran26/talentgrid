@@ -6,7 +6,10 @@ import com.talentgrid.backend.job.dto.JobFacetsResponse;
 import com.talentgrid.backend.job.dto.JobResponse;
 import com.talentgrid.backend.job.dto.JobStatsResponse;
 import com.talentgrid.backend.job.dto.UpdateJobRequest;
+import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -55,10 +58,17 @@ public class JobService {
 
             if (q != null && !q.isBlank()) {
                 String like = "%" + q.toLowerCase().trim() + "%";
+                // Skill tags are matched through a subquery so a job with several matching tags is returned once.
+                Subquery<Long> skillMatch = query.subquery(Long.class);
+                Root<Job> skillJob = skillMatch.from(Job.class);
+                Join<Job, String> skill = skillJob.join("skills");
+                skillMatch.select(skillJob.get("id"))
+                        .where(cb.equal(skillJob, root), cb.like(cb.lower(skill), like));
                 preds.add(cb.or(
                         cb.like(cb.lower(root.get("title")), like),
                         cb.like(cb.lower(root.get("company")), like),
-                        cb.like(cb.lower(root.get("description")), like)
+                        cb.like(cb.lower(root.get("description")), like),
+                        cb.exists(skillMatch)
                 ));
             }
             if (category != null && !category.isBlank()) {

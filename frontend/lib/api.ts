@@ -11,6 +11,19 @@ export class ApiError extends Error {
     super(message);
     this.name = "ApiError";
   }
+
+  /** The message plus any per-field validation errors, e.g. "Validation failed: title size must be between 0 and 200". */
+  get detail(): string {
+    const fields = (this.data as { fields?: Record<string, string> } | undefined)?.fields;
+    if (!fields || Object.keys(fields).length === 0) return this.message;
+    return `${this.message}: ${Object.entries(fields).map(([f, m]) => `${f} ${m}`).join("; ")}`;
+  }
+}
+
+/** 204 and other empty responses resolve to undefined instead of failing to parse. */
+async function parseBody<T>(res: Response): Promise<T> {
+  const text = await res.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -33,7 +46,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     throw new ApiError(res.status, msg, data);
   }
 
-  return res.json() as Promise<T>;
+  return parseBody<T>(res);
 }
 
 export interface PagedResult<T> {
@@ -89,7 +102,7 @@ async function requestMultipart<T>(
     throw new ApiError(res.status, msg, data);
   }
 
-  return res.json() as Promise<T>;
+  return parseBody<T>(res);
 }
 
 export const api = {

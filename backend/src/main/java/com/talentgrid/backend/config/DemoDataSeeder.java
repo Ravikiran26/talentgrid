@@ -79,7 +79,11 @@ public class DemoDataSeeder implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        if (!enabled || userRepository.existsByEmail(CANDIDATE_EMAIL)) return;
+        if (!enabled) return;
+        if (userRepository.existsByEmail(CANDIDATE_EMAIL)) {
+            refreshDemoSubscription();
+            return;
+        }
 
         User employer = seedEmployer();
         Company company = seedCompany(employer);
@@ -269,6 +273,19 @@ public class DemoDataSeeder implements CommandLineRunner {
                 .user(priya).plan(SubscriptionPlan.PRO)
                 .expiresAt(Instant.now().plus(23, ChronoUnit.DAYS))
                 .build());
+    }
+
+    /** The seeded PRO plan runs out after a few weeks; renew it on boot so the demo account stays PRO. */
+    private void refreshDemoSubscription() {
+        userRepository.findByEmail(CANDIDATE_EMAIL)
+                .flatMap(priya -> subscriptionRepository.findByUserId(priya.getId()))
+                .filter(sub -> sub.getExpiresAt() == null || sub.getExpiresAt().isBefore(Instant.now()))
+                .ifPresent(sub -> {
+                    sub.setPlan(SubscriptionPlan.PRO);
+                    sub.setExpiresAt(Instant.now().plus(23, ChronoUnit.DAYS));
+                    subscriptionRepository.save(sub);
+                    log.info("Renewed the demo candidate's PRO subscription.");
+                });
     }
 
     private void seedNotifications(User priya) {

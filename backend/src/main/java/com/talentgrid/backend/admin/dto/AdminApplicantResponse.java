@@ -29,7 +29,9 @@ public record AdminApplicantResponse(
             String resumeFile,
             boolean hasPhoto,
             int profileStrength,
-            CandidateStatus status
+            CandidateStatus status,
+            List<CandidateDetailResponse.ExperienceDto> experience,
+            List<CandidateDetailResponse.EducationDto> education
     ) {
         static Candidate from(User u) {
             return new Candidate(
@@ -45,7 +47,9 @@ public record AdminApplicantResponse(
                     u.getResumeFile(),
                     u.getPhotoFile() != null && !u.getPhotoFile().isBlank(),
                     u.getProfileStrength(),
-                    u.getStatus()
+                    u.getStatus(),
+                    u.getExperience().stream().map(CandidateDetailResponse.ExperienceDto::from).toList(),
+                    u.getEducation().stream().map(CandidateDetailResponse.EducationDto::from).toList()
             );
         }
     }

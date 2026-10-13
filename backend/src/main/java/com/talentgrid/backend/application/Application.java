@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 
@@ -54,4 +55,8 @@ public class Application {
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant appliedAt;
+
+    /** Last time the application changed, normally a status move. */
+    @UpdateTimestamp
+    private Instant updatedAt;
 }

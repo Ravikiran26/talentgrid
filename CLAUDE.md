@@ -66,7 +66,7 @@ There is no test runner configured yet in the frontend.
 
 The backend is a fresh Spring Boot scaffold. The main application class is at `src/main/java/com/talentgrid/backend/BackendApplication.java`. No domain classes, controllers, or repositories have been created yet.
 
-**Database** — PostgreSQL on `localhost:5432`, database `talentgrid_db`. Set the password in `application.properties` (`spring.datasource.password`). JPA is configured with `ddl-auto=update` so Hibernate manages the schema.
+**Database** — PostgreSQL on `localhost:5432`, database `talentgrid_db`. Set the password in `application.properties` (`spring.datasource.password`). The schema is managed by Flyway migrations in `src/main/resources/db/migration/` (`V1__…`, `V2__…`); Hibernate only validates it (`ddl-auto=validate`), so any entity change needs a new migration file or the app will not boot. Never edit a migration that has already run: Flyway rejects the changed checksum.
 
 **Security** — Stateless JWT auth (`security/JwtAuthFilter`) plus social sign-in via Spring OAuth2 client (`auth/oauth2/`). Google and LinkedIn are configured as OpenID Connect registrations in `application.properties`; the success handler finds-or-creates the user by verified e-mail, issues the normal JWT, and redirects to the frontend `/auth/callback` page with the token in the URL fragment. LinkedIn needs the `nonce` stripped from the authorization request (see `OAuth2ClientConfig`). Admin accounts cannot use social sign-in.
 

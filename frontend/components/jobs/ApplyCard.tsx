@@ -8,6 +8,9 @@ import { api, ApiError } from "@/lib/api";
 import { formatSalary, formatExperience } from "@/lib/utils";
 import type { Job } from "@/types";
 
+/** Matches the backend limit on coverLetter. */
+const COVER_NOTE_MAX = 5000;
+
 type ApplyState = "idle" | "loading" | "success" | "already" | "limited" | "error";
 
 export default function ApplyCard({ job }: { job: Job }) {
@@ -16,6 +19,8 @@ export default function ApplyCard({ job }: { job: Job }) {
   const [canApply, setCanApply] = useState<boolean | null>(null);
   const [mounted,  setMounted]  = useState(false);
   const [limitMsg, setLimitMsg] = useState("");
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [note,     setNote]     = useState("");
 
   useEffect(() => {
     // Syncing from localStorage (external system) — setState here is intentional
@@ -27,13 +32,19 @@ export default function ApplyCard({ job }: { job: Job }) {
       api.get<{ canApply: boolean }>("/api/profile/me")
         .then((p) => setCanApply(p.canApply))
         .catch(() => setCanApply(false));
+      // Show "Already applied" up front instead of only after a rejected click.
+      api.get<{ jobId: number | string }[]>("/api/applications/my")
+        .then((apps) => {
+          if (apps.some((a) => String(a.jobId) === String(job.id))) setState("already");
+        })
+        .catch(() => { /* fall back to the Apply button; the server still rejects duplicates */ });
     }
-  }, []);
+  }, [job.id]);
 
   async function handleApply() {
     setState("loading");
     try {
-      await api.post("/api/applications", { jobId: job.id });
+      await api.post("/api/applications", { jobId: job.id, coverLetter: note.trim() || null });
       setState("success");
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
@@ -101,6 +112,22 @@ export default function ApplyCard({ job }: { job: Job }) {
             <div className="h-[46px] bg-border/30 animate-pulse" />
           ) : canApply ? (
             <>
+              {noteOpen ? (
+                <div className="mb-3">
+                  <label htmlFor="cover-note" className="block text-[12px] font-sans font-semibold uppercase tracking-[0.16em] text-muted mb-1.5">
+                    Note to the hiring team
+                  </label>
+                  <textarea id="cover-note" rows={4} maxLength={COVER_NOTE_MAX} value={note} onChange={(e) => setNote(e.target.value)}
+                    placeholder="Why you're a strong fit, in two or three lines."
+                    className="w-full px-3 py-2 text-[14px] font-sans text-charcoal placeholder:text-muted-light bg-white border border-border focus:outline-none focus:border-navy resize-y" />
+                  <p className="mt-1 text-right text-[12px] font-sans text-muted tabular-nums">{note.length}/{COVER_NOTE_MAX}</p>
+                </div>
+              ) : (
+                <button type="button" onClick={() => setNoteOpen(true)}
+                  className="mb-3 text-[13px] font-sans text-brass hover:text-navy transition-colors">
+                  + Add a note to the hiring team (optional)
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handleApply}

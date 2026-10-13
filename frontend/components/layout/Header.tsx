@@ -124,9 +124,9 @@ export default function Header() {
                     className={`text-[11px] font-sans font-semibold uppercase tracking-[0.16em] px-2.5 py-1 border transition-colors ${
                       subscription.active
                         ? "text-brass border-brass/50 bg-highlight-strong hover:bg-highlight-strong"
-                        : "text-muted border-border hover:border-navy/30"
+                        : "text-navy border-navy/30 hover:border-brass hover:text-brass"
                     }`}>
-                    {subscription.active ? "PRO" : "FREE"}
+                    {subscription.active ? "PRO" : "Upgrade"}
                   </Link>
 
                   {/* Notifications */}

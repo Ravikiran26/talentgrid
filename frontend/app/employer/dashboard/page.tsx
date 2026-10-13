@@ -8,7 +8,7 @@ import {
   Users, CheckCircle2, RotateCcw, AlertCircle, Building2,
 } from "lucide-react";
 import { getUser, type AuthUser } from "@/lib/auth";
-import { api } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import { normalizeJob } from "@/lib/jobs";
 import { fetchMyCompany, type CompanyProfile } from "@/lib/company";
 import { formatSalary, formatExperience } from "@/lib/utils";
@@ -287,6 +287,11 @@ export default function EmployerDashboard() {
 }
 
 
+/** One list item per non-empty line. */
+function toLines(text: string): string[] {
+  return text.split("\n").map((l) => l.replace(/^\s*[-•*]\s*/, "").trim()).filter(Boolean);
+}
+
 /* ── Job form modal ─────────────────────────────────────────── */
 function JobFormModal({ initial, companyName, onClose, onSaved }: {
   initial: Job | null; companyName: string | null; onClose: () => void; onSaved: () => void;
@@ -304,6 +309,9 @@ function JobFormModal({ initial, companyName, onClose, onSaved }: {
     description:    initial?.description    ?? "",
     openings:       initial?.openings       ?? 1,
     skillsRaw:      (initial?.skills ?? []).join(", "),
+    responsibilitiesRaw: (initial?.responsibilities ?? []).join("\n"),
+    requirementsRaw:     (initial?.requirements ?? []).join("\n"),
+    education:           initial?.education ?? "",
   });
   const [saving,  setSaving]  = useState(false);
   const [success, setSuccess] = useState(false);
@@ -323,6 +331,9 @@ function JobFormModal({ initial, companyName, onClose, onSaved }: {
       salaryMax: form.salaryMax !== "" ? Number(form.salaryMax) : null,
       description: form.description, openings: Number(form.openings),
       skills: form.skillsRaw.split(",").map((s) => s.trim()).filter(Boolean),
+      responsibilities: toLines(form.responsibilitiesRaw),
+      requirements: toLines(form.requirementsRaw),
+      education: form.education.trim() || null,
     };
     try {
       if (initial) {
@@ -333,7 +344,7 @@ function JobFormModal({ initial, companyName, onClose, onSaved }: {
       setSuccess(true);
       setTimeout(onSaved, 900);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save the job.");
+      setError(err instanceof ApiError ? err.detail : err instanceof Error ? err.message : "Could not save the job.");
       setSaving(false);
     }
   }
@@ -407,7 +418,11 @@ function JobFormModal({ initial, companyName, onClose, onSaved }: {
               <F label="Openings"><input type="number" min={1} value={form.openings} onChange={(e) => set("openings", e.target.value)} className={inp} /></F>
             </div>
             <F label="Skills (comma-separated)"><input value={form.skillsRaw} onChange={(e) => set("skillsRaw", e.target.value)} placeholder="e.g. Agile, PMP, JIRA" className={inp} /></F>
-            <F label="Job Description"><textarea rows={4} value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="Describe the role…" className={`${inp} resize-none`} /></F>
+            <F label="Job Description"><textarea rows={5} value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="Overview of the role. Leave a blank line between paragraphs." className={`${inp} resize-y`} /></F>
+            <F label="Key Responsibilities (one per line)"><textarea rows={4} value={form.responsibilitiesRaw} onChange={(e) => set("responsibilitiesRaw", e.target.value)} placeholder={"Lead programme planning and budgeting\nRun PI planning across teams"} className={`${inp} resize-y`} /></F>
+            <F label="What We Are Looking For (one per line)"><textarea rows={4} value={form.requirementsRaw} onChange={(e) => set("requirementsRaw", e.target.value)} placeholder={"8+ years in programme management\nPMP or SAFe certification"} className={`${inp} resize-y`} /></F>
+            <F label="Education"><input value={form.education} onChange={(e) => set("education", e.target.value)} placeholder="e.g. Bachelor's degree in Engineering or equivalent" className={inp} /></F>
+            <p className="text-[13px] font-sans text-muted">&ldquo;About the company&rdquo; is taken from your company profile.</p>
             <div className="flex gap-3 pt-2">
               <button type="submit" disabled={saving}
                 className="flex-1 py-3 text-[13px] font-sans font-semibold uppercase tracking-[0.18em] text-navy bg-brass hover:bg-brass/90 disabled:opacity-60 transition-colors">

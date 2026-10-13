@@ -10,6 +10,19 @@ export function formatRelativeDate(iso: string): string {
   return date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
+/** For mid-sentence use ("Updated today", "Applied 17 Sept 2026"): lower-cases only the relative words. */
+export function formatRelativeDateInline(iso: string): string {
+  const r = formatRelativeDate(iso);
+  return /^(Today|Yesterday|\d+ days ago)$/.test(r) ? r.toLowerCase() : r;
+}
+
+/** "Apr 2021" from an ISO date such as "2021-04-01"; empty when missing or invalid. */
+export function formatMonthYear(iso?: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-IN", { month: "short", year: "numeric" });
+}
+
 export function formatSalary(min?: number, max?: number): string {
   if (!min && !max) return "Salary not disclosed";
   if (min && max) return `₹${min}–${max} LPA`;

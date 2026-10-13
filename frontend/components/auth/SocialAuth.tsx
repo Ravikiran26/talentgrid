@@ -20,7 +20,7 @@ export default function SocialAuth({ mode }: { mode: "register" | "login" }) {
         {/* Google */}
         <a
           href={`${API_URL}/oauth2/authorization/google`}
-          className="flex items-center gap-3 w-full px-4 py-3 border border-border bg-surface hover:bg-ivory hover:border-navy/20 transition-colors duration-150 group"
+          className="flex items-center justify-center gap-3 w-full px-4 py-3 border border-border bg-surface hover:bg-ivory hover:border-navy/20 transition-colors duration-150 group"
         >
           <GoogleIcon />
           <span className="text-[15px] font-sans text-charcoal group-hover:text-navy transition-colors">
@@ -31,7 +31,7 @@ export default function SocialAuth({ mode }: { mode: "register" | "login" }) {
         {/* LinkedIn */}
         <a
           href={`${API_URL}/oauth2/authorization/linkedin`}
-          className="flex items-center gap-3 w-full px-4 py-3 border border-border bg-surface hover:bg-ivory hover:border-navy/20 transition-colors duration-150 group"
+          className="flex items-center justify-center gap-3 w-full px-4 py-3 border border-border bg-surface hover:bg-ivory hover:border-navy/20 transition-colors duration-150 group"
         >
           <LinkedInIcon />
           <span className="text-[15px] font-sans text-charcoal group-hover:text-navy transition-colors">

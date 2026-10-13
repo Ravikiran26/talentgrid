@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, MapPin, ChevronDown } from "lucide-react";
 
-const QUICK_FILTERS = [
+/** Shown until the candidate adds skills to their profile. */
+const DEFAULT_FILTERS = [
   { label: "Project Manager", q: "Project Manager" },
   { label: "PMO",             q: "PMO" },
   { label: "Scrum Master",    q: "Scrum Master" },
@@ -21,7 +22,14 @@ const EXPERIENCE = [
   { value: "10+",  label: "10+ years" },
 ];
 
-export default function DashboardSearch() {
+const MAX_FILTERS = 6;
+
+export default function DashboardSearch({ skills }: { skills: string[] }) {
+  const fromSkills = skills.length > 0;
+  const filters = fromSkills
+    ? skills.slice(0, MAX_FILTERS).map((s) => ({ label: s, q: s }))
+    : DEFAULT_FILTERS;
+
   const router = useRouter();
   const [q, setQ]     = useState("");
   const [loc, setLoc] = useState("");
@@ -68,8 +76,8 @@ export default function DashboardSearch() {
       </form>
 
       <div className="mt-3 flex flex-wrap items-center gap-x-1 gap-y-2">
-        <span className="text-[13px] font-sans text-muted mr-2">Quick filters</span>
-        {QUICK_FILTERS.map((f) => (
+        <span className="text-[13px] font-sans text-muted mr-2">{fromSkills ? "Your skills" : "Quick filters"}</span>
+        {filters.map((f) => (
           <Link key={f.label} href={`/jobs?q=${encodeURIComponent(f.q)}`}
             className="text-[14px] font-sans text-charcoal/80 hover:text-navy border border-border hover:border-navy/40 bg-white/60 hover:bg-white rounded-[4px] px-3 py-1.5 transition-colors">
             {f.label}
