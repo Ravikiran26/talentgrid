@@ -59,6 +59,7 @@ export async function fetchJobs(params: {
   try {
     const res = await fetch(`${API_URL}/api/jobs?${qs.toString()}`, {
       next: { revalidate: 60 },
+      signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) return [];
     const raw = (await res.json()) as Record<string, unknown>[];
@@ -73,6 +74,7 @@ export async function fetchJobById(id: string): Promise<Job | null> {
   try {
     const res = await fetch(`${API_URL}/api/jobs/${encodeURIComponent(id)}`, {
       next: { revalidate: 60 },
+      signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) return null;
     const raw = (await res.json()) as Record<string, unknown>;

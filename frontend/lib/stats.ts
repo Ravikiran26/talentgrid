@@ -14,7 +14,7 @@ export interface JobFacets { categories: Facet[]; locations: Facet[]; companies:
 
 export async function fetchJobStatsServer(): Promise<JobStats | null> {
   try {
-    const res = await fetch(`${API_URL}/api/jobs/stats`, { next: { revalidate: 60 } });
+    const res = await fetch(`${API_URL}/api/jobs/stats`, { next: { revalidate: 60 }, signal: AbortSignal.timeout(8000) });
     return res.ok ? ((await res.json()) as JobStats) : null;
   } catch {
     return null;
@@ -23,7 +23,7 @@ export async function fetchJobStatsServer(): Promise<JobStats | null> {
 
 export async function fetchJobFacetsServer(): Promise<JobFacets | null> {
   try {
-    const res = await fetch(`${API_URL}/api/jobs/facets`, { next: { revalidate: 60 } });
+    const res = await fetch(`${API_URL}/api/jobs/facets`, { next: { revalidate: 60 }, signal: AbortSignal.timeout(8000) });
     return res.ok ? ((await res.json()) as JobFacets) : null;
   } catch {
     return null;

@@ -57,7 +57,7 @@ export async function saveMyCompany(form: CompanyForm): Promise<CompanyProfile> 
 export async function fetchCompany(id: string): Promise<CompanyProfile | null> {
   const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
   try {
-    const res = await fetch(`${API_URL}/api/companies/${encodeURIComponent(id)}`, { next: { revalidate: 60 } });
+    const res = await fetch(`${API_URL}/api/companies/${encodeURIComponent(id)}`, { next: { revalidate: 60 }, signal: AbortSignal.timeout(8000) });
     if (!res.ok) return null;
     return normalize((await res.json()) as Record<string, unknown>);
   } catch {

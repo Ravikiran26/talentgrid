@@ -17,7 +17,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 /** Server-side list (RSC). Fails soft with []. */
 export async function fetchInsights(): Promise<Insight[]> {
   try {
-    const res = await fetch(`${API_URL}/api/insights`, { next: { revalidate: 60 } });
+    const res = await fetch(`${API_URL}/api/insights`, { next: { revalidate: 60 }, signal: AbortSignal.timeout(8000) });
     return res.ok ? ((await res.json()) as Insight[]) : [];
   } catch {
     return [];
@@ -27,7 +27,7 @@ export async function fetchInsights(): Promise<Insight[]> {
 /** Server-side detail (RSC). Null on 404. */
 export async function fetchInsight(slug: string): Promise<Insight | null> {
   try {
-    const res = await fetch(`${API_URL}/api/insights/${encodeURIComponent(slug)}`, { next: { revalidate: 60 } });
+    const res = await fetch(`${API_URL}/api/insights/${encodeURIComponent(slug)}`, { next: { revalidate: 60 }, signal: AbortSignal.timeout(8000) });
     return res.ok ? ((await res.json()) as Insight) : null;
   } catch {
     return null;
